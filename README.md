@@ -1,3 +1,5 @@
+## test
+## test2
 # HAFR
 This our official implementation for the paper: Hierarchical Attention Network for Visually-aware
 Food Recommendation
@@ -38,3 +40,5 @@ We provide processed dataset: Allrecipes in [here](https://pan.baidu.com/s/1-CNk
 * Valid file (negative instances).
 * Each line corresponds to the user of valid.rating, containing 500 negative samples.
 * Each line is in the format: (userID:itemID1,itemID2...)\t negativeItemID1\t negativeItemID2...
+
+
