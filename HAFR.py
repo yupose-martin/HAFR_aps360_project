@@ -76,9 +76,9 @@ def sampling(dataset):
     for (u, i) in dataset.trainMatrix.keys():
         _user_input.append(u)
         _item_input_pos.append(i)
-	_ingre_input_pos.append(dataset.ingreCodeDict[i])
-	_ingre_num_pos.append(dataset.ingreNum[i])
-	_image_input_pos.append(dataset.embImage[i])
+        _ingre_input_pos.append(dataset.ingreCodeDict[i])
+        _ingre_num_pos.append(dataset.ingreNum[i])
+        _image_input_pos.append(dataset.embImage[i])
     return _user_input, _item_input_pos, _ingre_input_pos, _ingre_num_pos,  _image_input_pos
 
 
@@ -116,11 +116,11 @@ def shuffle(samples, batch_size, dataset, model):
                 for dns in range(_model.dns):
                     user = _user_input[_index[idx]]
                     user_neg_batch.append(user)
-		    gtItem_list = _dataset.validTestRatings[user]
+                    gtItem_list = _dataset.validTestRatings[user]
                     if p == 0:
                         j = np.random.randint(_dataset.num_items)
                         while j in _dataset.trainList[_user_input[_index[idx]]] or j in gtItem_list:
-                                j = np.random.randint(_dataset.num_items)
+                            j = np.random.randint(_dataset.num_items)
                         neg_index.append(j)
                     else:
                         j = neg_index[idx]
@@ -136,7 +136,7 @@ def shuffle(samples, batch_size, dataset, model):
 class HAFR:
     def __init__(self, num_users, num_items, num_cold, num_ingredients, image_size, args):
         self.num_items = num_items
-	self.num_cold = num_cold
+        self.num_cold = num_cold
         self.num_users = num_users
         self.embedding_size = args.embed_size
         self.learning_rate = args.lr
@@ -145,11 +145,11 @@ class HAFR:
         self.epochs = args.epochs
         self.batch_size = args.batch_size
         self.num_ingredients = num_ingredients
-	self.image_size = image_size
-	self.reg_image = args.reg_image
-	self.reg_w = args.reg_w
-	self.reg_h = args.reg_h
-	self.weight_size = args.weight_size
+        self.image_size = image_size
+        self.reg_image = args.reg_image
+        self.reg_w = args.reg_w
+        self.reg_h = args.reg_h
+        self.weight_size = args.weight_size
 
     def _create_placeholders(self):
         with tf.name_scope("input_data"):
@@ -162,15 +162,15 @@ class HAFR:
             self.ingre_input_neg = tf.placeholder(tf.int32, shape=[None, None], name="ingre_input_neg")
             self.ingre_num_neg = tf.placeholder(tf.int32, shape=[None, 1], name="ingre_num_neg")
             self.image_input_neg = tf.placeholder(tf.float32, shape=[None, self.image_size], name="image_input_neg")
-	    self.keep_prob = tf.placeholder(tf.float32, name="dropout_keep")
+            self.keep_prob = tf.placeholder(tf.float32, name="dropout_keep")
             self.train_phase = tf.placeholder(tf.bool, name="train_phase")
 
     def _create_variables(self):
         with tf.name_scope("embedding"):
-	    self.embedding_P = tf.Variable(
+            self.embedding_P = tf.Variable(
                 tf.truncated_normal(shape=[self.num_users, self.embedding_size], mean=0.0, stddev=0.01),
                 name='embedding_P', dtype=tf.float32, trainable=True)  # (users, embedding_size)
-	    self.embedding_Q1 = tf.Variable(
+            self.embedding_Q1 = tf.Variable(
                 tf.truncated_normal(shape=[self.num_items, self.embedding_size], mean=0.0, stddev=0.01),
                 name='embedding_Q1', dtype=tf.float32)  # (items, embedding_size)
             self.embedding_Q2 = tf.Variable(
@@ -191,13 +191,13 @@ class HAFR:
 
             self.h = tf.Variable(tf.truncated_normal(shape=[self.embedding_size,1], mean=0.0, stddev=tf.sqrt(tf.div(2.0, 2*self.embedding_size))),name='h_for_MLP', dtype=tf.float32, trainable=True)
 
-	    self.W_att_ingre = tf.Variable(tf.truncated_normal(shape=[self.embedding_size*3, self.weight_size], mean=0.0, stddev=tf.sqrt(tf.div(2.0, 3*self.embedding_size+self.weight_size))),name='Weights_for_ingre_attMLP', dtype=tf.float32, trainable=True)
+            self.W_att_ingre = tf.Variable(tf.truncated_normal(shape=[self.embedding_size*3, self.weight_size], mean=0.0, stddev=tf.sqrt(tf.div(2.0, 3*self.embedding_size+self.weight_size))),name='Weights_for_ingre_attMLP', dtype=tf.float32, trainable=True)
             self.b_att_ingre = tf.Variable(tf.truncated_normal(shape=[1, self.weight_size], mean=0.0, stddev=tf.sqrt(tf.div(2.0, self.weight_size + self.embedding_size))),name='Bias_for_ingre_attMLP', dtype=tf.float32, trainable=True)
 
             self.v = tf.Variable(tf.ones([self.weight_size, 1]), name='v_for_MLP', dtype=tf.float32, trainable=True)
 
 	    
-	    self.W_att_com = tf.Variable(tf.truncated_normal(shape=[self.embedding_size*2, self.weight_size], mean=0.0, stddev=tf.sqrt(tf.div(2.0, 2*self.embedding_size+self.weight_size))),name='Weights_for_com_attMLP', dtype=tf.float32, trainable=True)
+            self.W_att_com = tf.Variable(tf.truncated_normal(shape=[self.embedding_size*2, self.weight_size], mean=0.0, stddev=tf.sqrt(tf.div(2.0, 2*self.embedding_size+self.weight_size))),name='Weights_for_com_attMLP', dtype=tf.float32, trainable=True)
             self.b_att_com = tf.Variable(tf.truncated_normal(shape=[1, self.weight_size], mean=0.0, stddev=tf.sqrt(tf.div(2.0, self.weight_size + self.embedding_size))),name='Bias_for_com_attMLP', dtype=tf.float32, trainable=True)
 
             self.v_c = tf.Variable(tf.ones([self.weight_size, 1]), name='v_com_att_for_MLP', dtype=tf.float32, trainable=True)
@@ -205,17 +205,17 @@ class HAFR:
 
     def _attention_ingredient_level(self, q_, embedding_p, image_embed, item_ingre_num):
         with tf.name_scope("attention_ingredient_level"):
-		b = tf.shape(q_)[0]
-		n = tf.shape(q_)[1]
-		expand_p = tf.expand_dims(embedding_p, 1)
-		tile_p = tf.tile(expand_p, [1,n,1]) # (b,n,e)
-		expand_image = tf.expand_dims(image_embed, 1)
-		tile_image = tf.tile(expand_image, [1,n,1]) # (b,n,e)
-		concat_v = tf.concat([q_, tile_p, tile_image],2) # (b,n,3e)
-		MLP_output = tf.matmul(tf.reshape(concat_v, [b*n,-1]), self.W_att_ingre) + self.b_att_ingre
-		MLP_output = tf.nn.tanh( MLP_output )
-		A_ = tf.reshape(tf.matmul(MLP_output, self.v),[b,n])
-		smooth = -1e12
+                b = tf.shape(q_)[0]
+                n = tf.shape(q_)[1]
+                expand_p = tf.expand_dims(embedding_p, 1)
+                tile_p = tf.tile(expand_p, [1,n,1]) # (b,n,e)
+                expand_image = tf.expand_dims(image_embed, 1)
+                tile_image = tf.tile(expand_image, [1,n,1]) # (b,n,e)
+                concat_v = tf.concat([q_, tile_p, tile_image],2) # (b,n,3e)
+                MLP_output = tf.matmul(tf.reshape(concat_v, [b*n,-1]), self.W_att_ingre) + self.b_att_ingre
+                MLP_output = tf.nn.tanh( MLP_output )
+                A_ = tf.reshape(tf.matmul(MLP_output, self.v),[b,n])
+                smooth = -1e12
                 self.num_idx = tf.reduce_sum(item_ingre_num ,1)
                 mask_mat = tf.sequence_mask(self.num_idx, maxlen = n, dtype = tf.float32) # (b, n) 
                 mask_mat = tf.ones_like(mask_mat) - mask_mat
@@ -224,25 +224,25 @@ class HAFR:
                 self.A = tf.expand_dims(self.A, 2) #(b,n,1)
                 self.A_sum = tf.reduce_sum(self.A,1)
 
-		return tf.reduce_sum(self.A * q_, 1) # (b,n,e) -->(b,e)
+                return tf.reduce_sum(self.A * q_, 1) # (b,n,e) -->(b,e)
 
 
     def _attention_id_ingre_image(self, embedding_p,  embedding_q, embedding_ingre_att, image_embed):
-	b = tf.shape(embedding_p)[0]
-	cp1 = tf.concat([embedding_p, embedding_q], 1)
-	cp2 = tf.concat([embedding_p, embedding_ingre_att], 1)
-	cp3 = tf.concat([embedding_p, image_embed], 1)
-	cp = tf.concat([cp1,cp2,cp3], 0)
-	c_hidden_output = tf.matmul(cp, self.W_att_com) + self.b_att_com
-	c_hidden_output = tf.nn.tanh(c_hidden_output)
-	c_mlp_output = tf.reshape(tf.matmul(c_hidden_output, self.v_c), [b,-1])
-	B = tf.nn.softmax(c_mlp_output)
-	self.B = tf.expand_dims(B, 2) # (b,3,1)
-	self.ce1 = tf.expand_dims(embedding_q, 1) # (b,1,e)
-	self.ce2 = tf.expand_dims(embedding_ingre_att, 1) # (b,1,e)
-	self.ce3 = tf.expand_dims(image_embed, 1)
-	self.ce = tf.concat([self.ce1, self.ce2, self.ce3], 1) #(b,3,e)
-	return tf.reduce_sum(self.B * self.ce, 1) #(b,e)
+        b = tf.shape(embedding_p)[0]
+        cp1 = tf.concat([embedding_p, embedding_q], 1)
+        cp2 = tf.concat([embedding_p, embedding_ingre_att], 1)
+        cp3 = tf.concat([embedding_p, image_embed], 1)
+        cp = tf.concat([cp1,cp2,cp3], 0)
+        c_hidden_output = tf.matmul(cp, self.W_att_com) + self.b_att_com
+        c_hidden_output = tf.nn.tanh(c_hidden_output)
+        c_mlp_output = tf.reshape(tf.matmul(c_hidden_output, self.v_c), [b,-1])
+        B = tf.nn.softmax(c_mlp_output)
+        self.B = tf.expand_dims(B, 2) # (b,3,1)
+        self.ce1 = tf.expand_dims(embedding_q, 1) # (b,1,e)
+        self.ce2 = tf.expand_dims(embedding_ingre_att, 1) # (b,1,e)
+        self.ce3 = tf.expand_dims(image_embed, 1)
+        self.ce = tf.concat([self.ce1, self.ce2, self.ce3], 1) #(b,3,e)
+        return tf.reduce_sum(self.B * self.ce, 1) #(b,e)
 
     def _attention_user(self, embedding_p):
         return embedding_p
@@ -261,7 +261,7 @@ class HAFR:
             self.user_item_concat = tf.concat([self.embedding_p_att, self.item_att_fin, self.embedding_p_att*self.item_att_fin], 1)
             self.hidden_input = tf.matmul(self.user_item_concat, self.W_concat) + self.b_concat
             MLP_output = tf.nn.dropout(self.hidden_input, self.keep_prob)
-	    MLP_output = tf.nn.relu( MLP_output )
+            MLP_output = tf.nn.relu( MLP_output )
 
             return tf.matmul(MLP_output, self.h), self.embedding_p, self.embedding_q, self.embedding_ingre  # (b, embedding_size) * (embedding_size, 1)
 
@@ -269,13 +269,13 @@ class HAFR:
 
     def _create_loss(self):
         with tf.name_scope("loss"):
-	    self.output,self.embed_pos_p, self.embed_pos_q, self.embed_pos_ingre = self._create_inference(self.item_input_pos, self.ingre_input_pos, self.image_input_pos, self.ingre_num_pos)
+            self.output,self.embed_pos_p, self.embed_pos_q, self.embed_pos_ingre = self._create_inference(self.item_input_pos, self.ingre_input_pos, self.image_input_pos, self.ingre_num_pos)
             self.output_neg, self.embed_neg_p, self.embed_neg_q, self.embed_neg_ingre = self._create_inference(self.item_input_neg, self.ingre_input_neg, self.image_input_neg, self.ingre_num_neg)
             self.result = self.output - self.output_neg
             self.loss = tf.reduce_sum(tf.nn.softplus(-self.result))
 
             # loss to be omptimized
-	    self.opt_loss = self.loss + self.reg * (
+            self.opt_loss = self.loss + self.reg * (
                         tf.reduce_sum(tf.square(self.embed_pos_p)) + tf.reduce_sum(tf.square(self.embed_pos_q)) + tf.reduce_sum(tf.square(self.embed_pos_ingre)) + \
                         tf.reduce_sum(tf.square(self.embed_neg_q)) + tf.reduce_sum(tf.square(self.embed_neg_ingre))) + self.reg_image * (
 			tf.reduce_sum(tf.square(self.W_image))) + self.reg_w * (tf.reduce_sum(tf.square(self.W_concat))) + self.reg_h * (tf.reduce_sum(tf.square(self.h)))
@@ -294,7 +294,7 @@ class HAFR:
 # training
 def training(model, dataset, args, saver=None):  # saver is an object to save pq
     with tf.Session() as sess:
-	ckpt_save_path = "Pretrain/embed_%d/%s/" % (args.embed_size, args.save_folder)
+        ckpt_save_path = "Pretrain/embed_%d/%s/" % (args.embed_size, args.save_folder)
         ckpt_restore_path = "Pretrain/embed_64/7-d41/"
 	
         if not os.path.exists(ckpt_save_path):
@@ -302,7 +302,7 @@ def training(model, dataset, args, saver=None):  # saver is an object to save pq
         if not os.path.exists(ckpt_restore_path):
             os.makedirs(ckpt_restore_path)
 
-	saver_ckpt = tf.train.Saver({'embedding_P': model.embedding_P, 'embedding_Q1': model.embedding_Q1, 'embedding_Q2': model.embedding_Q2, 'c1':model.c1, \
+        saver_ckpt = tf.train.Saver({'embedding_P': model.embedding_P, 'embedding_Q1': model.embedding_Q1, 'embedding_Q2': model.embedding_Q2, 'c1':model.c1, \
                                          'W_image': model.W_image, 'b_image': model.b_image, \
                                          'W_concat': model.W_concat, 'b_concat': model.b_concat, \
                                          'h': model.h})
@@ -314,14 +314,14 @@ def training(model, dataset, args, saver=None):  # saver is an object to save pq
             if ckpt and ckpt.model_checkpoint_path:
                 saver_ckpt.restore(sess, ckpt.model_checkpoint_path)
                 logging.info("Using pretrained variables")
-                print "Using pretrained variables"
-	    else:
-		print "Wrong in pretrained variables loading"
+                print("Using pretrained variables")
+            else:
+                print("Wrong in pretrained variables loading")
         else:
             logging.info("Initialized from scratch")
-            print "Initialized from scratch"
+            print("Initialized from scratch")
 
-	saver_ckpt_com = tf.train.Saver({'embedding_P': model.embedding_P, 'embedding_Q1': model.embedding_Q1, 'embedding_Q2': model.embedding_Q2, 'c1':model.c1, \
+        saver_ckpt_com = tf.train.Saver({'embedding_P': model.embedding_P, 'embedding_Q1': model.embedding_Q1, 'embedding_Q2': model.embedding_Q2, 'c1':model.c1, \
                                          'W_image': model.W_image, 'b_image': model.b_image, \
                                          'W_concat': model.W_concat, 'b_concat': model.b_concat, \
                                          'h': model.h, 'v':model.v, \
@@ -334,13 +334,13 @@ def training(model, dataset, args, saver=None):  # saver is an object to save pq
         max_auc = 0
         best_res = {}
 
-	max_valid_auc = 0
-	best_valid_res = {}
-	best_model = None
+        max_valid_auc = 0
+        best_valid_res = {}
+        best_model = None
 
         # train by epoch
         for epoch_count in range(1, 1 + args.epochs):
-	    print "Epoch %d begins in %s" % (epoch_count, datetime.datetime.now())
+            print("Epoch %d begins in %s" % (epoch_count, datetime.datetime.now()))
             # initialize for training batches
             batch_begin = time()
             batches = shuffle(samples, args.batch_size, dataset, model)
@@ -348,12 +348,12 @@ def training(model, dataset, args, saver=None):  # saver is an object to save pq
             pre_loss, pre_obj, prev_acc = training_loss_acc(model, sess, batches)
 
             # training the model
-	    loss_begin = time()
+            loss_begin = time()
             train_loss, train_obj, post_acc, train_time = training_batch(model, sess, batches, epoch_count, batch_time, pre_loss, pre_obj, prev_acc)
-            print "train_time = %.1fs" % train_time
-    	    loss_time = time() - loss_begin
+            print("train_time = %.1fs" % train_time)
+            loss_time = time() - loss_begin
 
-	    if epoch_count % args.val_verbose == 0:
+            if epoch_count % args.val_verbose == 0:
                 valid_feed_dicts = init_eval_model(model, dataset, "Valid")
                 auc, cur_res, valid_time = output_evaluate(model, sess, dataset, valid_feed_dicts, epoch_count, "Valid")
                 # print and log the best result for validation set
@@ -361,25 +361,24 @@ def training(model, dataset, args, saver=None):  # saver is an object to save pq
                         max_valid_auc = auc
                         best_valid_res['result'] = cur_res
                         best_valid_res['epoch'] = epoch_count
-			best_model = model
-			best_epoch = epoch_count
+                        best_model = model
+                        best_epoch = epoch_count
 	    
 
             if model.epochs == epoch_count:
-                print "Epoch %d is the best epoch for validation set " % best_valid_res['epoch']
-		
+                print("Epoch %d is the best epoch for validation set " % best_valid_res['epoch'])
+        
                 test_feed_dicts = init_eval_model(best_model, dataset, "Test")
-                print "test starting in %s" % datetime.datetime.now()
+                print("test starting in %s" % datetime.datetime.now())
                 auc, cur_res, test_time = output_evaluate(best_model, sess, dataset, test_feed_dicts, best_epoch, "Test")
-                print "test ending in %s" % datetime.datetime.now()
-                max_auc = auc
+                print("test ending in %s" % datetime.datetime.now())
                 best_res['result'] = cur_res
                 best_res['epoch'] = best_epoch
-		
-                print "For epoch %d [%.1fs], the result for test set is " % (best_res['epoch'], test_time)
+        
+                print("For epoch %d [%.1fs], the result for test set is " % (best_res['epoch'], test_time))
                 for idx, (recall_k, ndcg_k, auc_k) in enumerate(np.swapaxes(best_res['result'], 0, 1)):
                     res = "K = %d: Recall = %.4f, NDCG = %.4f, AUC = %.4f" % ((idx + 1)*10, recall_k, ndcg_k, auc_k)
-                    print res
+                    print(res)
 
             # save the embedding weights
             if args.ckpt > 0 and epoch_count % args.ckpt == 0:
@@ -404,8 +403,8 @@ def training_loss_acc(model, sess, train_batches):
     acc = 0
     idx = 0
     for train_batch in train_batches:
-	idx += 1
-    	user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos, user_input_neg, item_input_neg, ingre_input_neg, ingre_num_neg, image_input_neg = list(map(list, zip(*zip(*train_batch))))
+        idx += 1
+        user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos, user_input_neg, item_input_neg, ingre_input_neg, ingre_num_neg, image_input_neg = list(map(list, zip(*zip(*train_batch))))
         feed_dict = {model.user_input: user_input,
                      model.item_input_pos: item_input_pos,
                      model.ingre_input_pos: ingre_input_pos,
@@ -421,8 +420,8 @@ def training_loss_acc(model, sess, train_batches):
         train_loss += loss
         train_obj += obj
         acc += ((output_pos - output_neg) > 0).sum() / len(output_pos)
-	if idx == _num_batch:
-		break
+        if idx == _num_batch:
+            break
     num_batch = _num_batch 
     return train_loss / num_batch, train_obj / num_batch, acc / num_batch
 
@@ -435,8 +434,8 @@ def training_batch(model, sess, train_batches, epoch_count, batch_time, pre_loss
     idx = 0
     tmp_feed = None
     for train_batch in train_batches:
-	idx += 1
-    	user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos, user_input_neg, item_input_neg, ingre_input_neg, ingre_num_neg, image_input_neg = list(map(list, zip(*zip(*train_batch))))
+        idx += 1
+        user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos, user_input_neg, item_input_neg, ingre_input_neg, ingre_num_neg, image_input_neg = list(map(list, zip(*zip(*train_batch))))
         feed_dict = {model.user_input: user_input,
                      model.item_input_pos: item_input_pos,
                      model.ingre_input_pos: ingre_input_pos,
@@ -452,8 +451,8 @@ def training_batch(model, sess, train_batches, epoch_count, batch_time, pre_loss
         train_loss += loss
         train_obj += obj
         acc += ((output_pos - output_neg) > 0).sum() / len(output_pos)
-	if idx == _num_batch:
-		tmp_feed = feed_dict
+        if idx == _num_batch:
+            tmp_feed = feed_dict
     feed_dict = tmp_feed
     train_time = time() - train_begin
     num_batch = idx
@@ -579,7 +578,7 @@ def _eval_by_user(user_idx, user_batch):
         recall_value, ndcg_value = metrics(doc_list, rel_list)
         recall.append(recall_value)
         ndcg.append(ndcg_value)
-	auc.append(auc_value)
+    auc.append(auc_value)
 
     return recall, ndcg, auc
 
@@ -614,7 +613,7 @@ if __name__ == '__main__':
 
     # initialize dataset
     dataset = Dataset(args.path + args.dataset)
-    print "Has finished processing dataset"
+    print("Has finished processing dataset")
 
     # initialize models
     model = HAFR(dataset.num_users, dataset.num_items, dataset.cold_num, dataset.num_ingredients, dataset.image_size, args)
