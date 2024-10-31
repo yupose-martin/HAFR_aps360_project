@@ -6,6 +6,7 @@ import os
 import math
 import numpy as np
 import tensorflow as tf
+tf.compat.v1.disable_eager_execution()
 from multiprocessing import Pool
 from multiprocessing import cpu_count
 import argparse
@@ -283,6 +284,10 @@ class HAFR:
     def _create_optimizer(self):
         with tf.name_scope("optimizer"):
             self.optimizer = tf.train.AdagradOptimizer(learning_rate=self.learning_rate).minimize(self.opt_loss)
+    
+    #Define this for compatibility
+    def _create_placeholders(self):
+        self.user_input = tf.compat.v1.placeholder(tf.int32, shape=[None, 1], name="user_input")
 
     def build_graph(self):
         self._create_placeholders()
