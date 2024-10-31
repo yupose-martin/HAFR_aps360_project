@@ -1,5 +1,9 @@
 # aps360
-## 
+## How to run
+* python .\pytorch_HAFR.py --path ..\Data\ --pretrain 0 --reg 0.1 --reg_image 0.01 --reg_h 1 --reg_w 1
+## Environment
+* python 3.10.14
+* torch 2.4.1
 # HAFR
 This our official implementation for the paper: Hierarchical Attention Network for Visually-aware
 Food Recommendation
