@@ -17,6 +17,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run HAFR.")
+    parser.add_argument('--subset_size', type=int, default='999999999',
+                        help='Subset used for training,whole dataset contains 676945 items.')
     parser.add_argument('--path', nargs='?', default='Data/',
                         help='Input data path.')
     parser.add_argument('--dataset', nargs='?', default='data',
@@ -25,9 +27,9 @@ def parse_args():
                         help='Evaluate per X epochs for validation set.')
     parser.add_argument('--test_verbose', type=int, default=10,
                         help='Evaluate per X epochs for test set.')
-    parser.add_argument('--batch_size', type=int, default=64,  # Reduced batch size
+    parser.add_argument('--batch_size', type=int, default=512,
                         help='batch_size')
-    parser.add_argument('--epochs', type=int, default=2,  # Reduced number of epochs
+    parser.add_argument('--epochs', type=int, default=10,
                         help='Number of epochs.')
     parser.add_argument('--embed_size', type=int, default=64,
                         help='Embedding size.')
@@ -56,29 +58,49 @@ def parse_args():
     return parser.parse_args()
 
 class CustomDataset(Dataset):
-    def __init__(self, dataset, subset_size=1000):  # Add subset_size parameter
+    def __init__(self, dataset, subset_size=1000,dns = 1):
         self.dataset = dataset
+        self.dns = dns
         self.subset_size = subset_size
-        self.user_input, self.item_input_pos, self.ingre_input_pos, self.ingre_num_pos, self.image_input_pos = self.sampling(dataset)
+        self.user_input, self.item_input_pos, self.ingre_input_pos, self.ingre_num_pos, self.image_input_pos, self.labels, self.max_idx = self.sampling(dataset)
+        print(f"Maximum index in dataset: {self.max_idx}")
 
     def sampling(self, dataset):
-        user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos = [], [], [], [], []
+        user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos, labels = [], [], [], [], [], []
+        max_idx = 0
         for idx, (u, i) in enumerate(dataset.trainMatrix.keys()):
-            if idx >= self.subset_size:  # Limit the subset size
+            if idx >= self.subset_size:
                 break
             user_input.append(u)
             item_input_pos.append(i)
             ingre_input_pos.append(dataset.ingreCodeDict[i])
             ingre_num_pos.append(dataset.ingreNum[i])
             image_input_pos.append(dataset.embImage[i])
-        return user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos
+            labels.append(1)  # Positive interaction
+            max_idx = max(max_idx, idx)
+        
+        # Generate negative samples
+        num_negatives = len(user_input) * self.dns
+        for _ in range(num_negatives):
+            u = np.random.choice([key[0] for key in dataset.trainMatrix.keys()])
+            j = np.random.randint(dataset.num_items)
+            while j in dataset.trainList[u] or j in dataset.validTestRatings[u]:
+                j = np.random.randint(dataset.num_items)
+            user_input.append(u)
+            item_input_pos.append(j)
+            ingre_input_pos.append(dataset.ingreCodeDict[j])
+            ingre_num_pos.append(dataset.ingreNum[j])
+            image_input_pos.append(dataset.embImage[j])
+            labels.append(0)  # Negative interaction
+
+        return user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos, labels, max_idx
 
     def __len__(self):
         return len(self.user_input)
 
     def __getitem__(self, idx):
-        return (self.user_input[idx], self.item_input_pos[idx], self.ingre_input_pos[idx], self.ingre_num_pos[idx], self.image_input_pos[idx])
-
+        return (self.user_input[idx], self.item_input_pos[idx], self.ingre_input_pos[idx], self.ingre_num_pos[idx], self.image_input_pos[idx], self.labels[idx])
+    
 class HAFR(nn.Module):
     def __init__(self, num_users, num_items, num_cold, num_ingredients, image_size, args):
         super(HAFR, self).__init__()
@@ -97,6 +119,7 @@ class HAFR(nn.Module):
         self.reg_w = args.reg_w
         self.reg_h = args.reg_h
         self.weight_size = args.weight_size
+        self.trained = args.pretrain
 
         # Embeddings
         self.user_embeddings = nn.Embedding(num_users, self.embedding_size)
@@ -104,7 +127,7 @@ class HAFR(nn.Module):
         self.ingredient_embeddings = nn.Embedding(num_ingredients + 1, self.embedding_size)
 
         # Image weights and bias
-        self.W_image = nn.Linear(image_size, self.embedding_size)
+        self.W_image = nn.Linear(self.image_size, self.embedding_size)
         self.b_image = nn.Parameter(torch.zeros(1, self.embedding_size))
 
         # MLP weights and bias
@@ -113,26 +136,20 @@ class HAFR(nn.Module):
 
         self.h = nn.Linear(self.embedding_size, 1)
 
-        # Attention weights and bias
         self.W_att_ingre = nn.Linear(self.embedding_size * 3, self.weight_size)
         self.b_att_ingre = nn.Parameter(torch.zeros(1, self.weight_size))
+
         self.v = nn.Parameter(torch.ones(self.weight_size, 1))
 
         self.W_att_com = nn.Linear(self.embedding_size * 2, self.weight_size)
         self.b_att_com = nn.Parameter(torch.zeros(1, self.weight_size))
+
         self.v_c = nn.Parameter(torch.ones(self.weight_size, 1))
 
     def forward(self, user_input, item_input, ingre_input, image_input, ingre_num):
-        user_input = user_input.long()
-        item_input = item_input.long()
-        ingre_input = ingre_input.long()
-        image_input = image_input.float()
-        ingre_num = ingre_num.long()
-
         user_embedding = self.user_embeddings(user_input)
         item_embedding = self.item_embeddings(item_input)
         ingre_embedding = self.ingredient_embeddings(ingre_input)
-
         image_embedding = self.W_image(image_input) + self.b_image
 
         ingre_att = self._attention_ingredient_level(ingre_embedding, user_embedding, image_embedding, ingre_num)
@@ -147,78 +164,68 @@ class HAFR(nn.Module):
 
     def _attention_ingredient_level(self, q_, embedding_p, image_embed, item_ingre_num):
         b, n, _ = q_.shape
-        tile_p = embedding_p.unsqueeze(1).expand(b, n, -1)
-        tile_image = image_embed.unsqueeze(1).expand(b, n, -1)
-        concat_v = torch.cat([q_, tile_p, tile_image], dim=2)
-        MLP_output = torch.tanh(self.W_att_ingre(concat_v.view(b * n, -1)) + self.b_att_ingre)
-        A_ = MLP_output @ self.v
-        A_ = A_.view(b, n)
-        mask = (torch.arange(n).expand(b, n) < item_ingre_num.unsqueeze(1)).float()
-        A_ = A_ * mask + (1 - mask) * -1e12
-        A = torch.softmax(A_, dim=1).unsqueeze(2)
-        return (A * q_).sum(1)
+        tile_p = embedding_p.unsqueeze(1).expand(-1, n, -1)
+        tile_image = image_embed.unsqueeze(1).expand(-1, n, -1)
+        concat_v = torch.cat([q_, tile_p, tile_image], dim=-1)
+        MLP_output = torch.tanh(self.W_att_ingre(concat_v) + self.b_att_ingre)
+        A_ = torch.matmul(MLP_output, self.v).squeeze(-1)
+        mask = (torch.arange(n, device=q_.device).expand(b, n) < item_ingre_num.unsqueeze(1)).float()
+        A = torch.softmax(A_ + (1 - mask) * -1e12, dim=-1).unsqueeze(-1)
+        return torch.sum(A * q_, dim=1)
 
     def _attention_id_ingre_image(self, embedding_p, embedding_q, embedding_ingre_att, image_embed):
-        b = embedding_p.shape[0]
-        cp1 = torch.cat([embedding_p, embedding_q], dim=1)
-        cp2 = torch.cat([embedding_p, embedding_ingre_att], dim=1)
-        cp3 = torch.cat([embedding_p, image_embed], dim=1)
+        cp1 = torch.cat([embedding_p, embedding_q], dim=-1)
+        cp2 = torch.cat([embedding_p, embedding_ingre_att], dim=-1)
+        cp3 = torch.cat([embedding_p, image_embed], dim=-1)
         cp = torch.cat([cp1, cp2, cp3], dim=0)
         c_hidden_output = torch.tanh(self.W_att_com(cp) + self.b_att_com)
-        c_mlp_output = c_hidden_output @ self.v_c
-        B = torch.softmax(c_mlp_output.view(b, -1), dim=1).unsqueeze(2)
+        c_mlp_output = torch.matmul(c_hidden_output, self.v_c).view(-1, 3)
+        B = torch.softmax(c_mlp_output, dim=-1).unsqueeze(-1)
         ce = torch.stack([embedding_q, embedding_ingre_att, image_embed], dim=1)
-        return (B * ce).sum(1)
-
-def train(model, dataloader, optimizer, criterion, epochs):
+        return torch.sum(B * ce, dim=1)
+    
+def train(model, dataloader, optimizer, criterion, epochs, device):
     model.train()
     for epoch in range(epochs):
         total_loss = 0
         for batch in dataloader:
-            user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos = batch
-            user_input = user_input.long()
-            item_input_pos = item_input_pos.long()
-            ingre_input_pos = ingre_input_pos.long()
-            image_input_pos = image_input_pos.float()
-            ingre_num_pos = ingre_num_pos.long()
+            user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos, labels = batch
+            user_input = user_input.long().to(device)
+            item_input_pos = item_input_pos.long().to(device)
+            ingre_input_pos = ingre_input_pos.long().to(device)
+            image_input_pos = image_input_pos.float().to(device)
+            ingre_num_pos = ingre_num_pos.long().to(device)
+            labels = labels.float().to(device)
 
             optimizer.zero_grad()
             output = model(user_input, item_input_pos, ingre_input_pos, image_input_pos, ingre_num_pos)
-            print(output)  # Access the output to avoid compile error
-            loss = criterion(output, torch.ones_like(output))  # Define your target
+            print(f"output is :{output}")
+            loss = criterion(output.squeeze(), labels)
+            print(f"labels is :{labels}")
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
         print(f"Epoch {epoch+1}, Loss: {total_loss/len(dataloader)}")
 
-def evaluate(model, dataloader):
-    model.eval()
-    with torch.no_grad():
-        for batch in dataloader:
-            user_input, item_input_pos, ingre_input_pos, ingre_num_pos, image_input_pos = batch
-            user_input = user_input.long()
-            item_input_pos = item_input_pos.long()
-            ingre_input_pos = ingre_input_pos.long()
-            image_input_pos = image_input_pos.float()
-            ingre_num_pos = ingre_num_pos.long()
-
-            output = model(user_input, item_input_pos, ingre_input_pos, image_input_pos, ingre_num_pos)
-            print(output)
-            # Compute metrics
-
 if __name__ == '__main__':
     args = parse_args()
     print("Arguments: %s" % (args))
+
+    # Check if GPU is available
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
 
     # initialize dataset
     dataset = Dataset(args.path + args.dataset)
     print("Has finished processing dataset")
 
     # initialize models
-    model = HAFR(dataset.num_users, dataset.num_items, dataset.cold_num, dataset.num_ingredients, dataset.image_size, args)
+    model = HAFR(dataset.num_users, dataset.num_items, dataset.cold_num, dataset.num_ingredients, dataset.image_size, args).to(device)
 
     # DataLoader
-    custom_dataset = CustomDataset(dataset, subset_size=1000)  # Use a smaller subset of data
+    # totally 676945 items
+    # custom_dataset = CustomDataset(dataset, subset_size=9999999999, dns=model.dns)
+    custom_dataset = CustomDataset(dataset, subset_size=20, dns=model.dns)
     dataloader = DataLoader(custom_dataset, batch_size=args.batch_size, shuffle=True)
 
     # Optimizer and loss function
@@ -226,7 +233,22 @@ if __name__ == '__main__':
     criterion = nn.BCEWithLogitsLoss()  # Define your loss function
 
     # start training
-    train(model, dataloader, optimizer, criterion, args.epochs)
+    train(model, dataloader, optimizer, criterion, args.epochs, device)
+    # Ensure the save folder exists
+    if not os.path.exists(args.save_folder):
+        os.makedirs(args.save_folder)
+    # Save the model
+    save_path = os.path.join(args.save_folder, 'model.pth')
+    torch.save(model.state_dict(), save_path)
+    print(f"Model saved to {save_path}")
 
-    # start evaluation
-    evaluate(model, dataloader)
+    # # Load the model
+    # load_path = os.path.join(args.restore_folder, 'model.pth')
+    # if os.path.exists(load_path):
+    #     model.load_state_dict(torch.load(load_path))
+    #     print(f"Model loaded from {load_path}")
+    # else:
+    #     print(f"No model found at {load_path}")
+    #     # Ensure the save folder exists
+    #     if not os.path.exists(args.save_folder):
+    #         os.makedirs(args.save_folder)
