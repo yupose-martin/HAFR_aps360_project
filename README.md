@@ -22,6 +22,9 @@
 ## to do
 * compute and store validation loss w.r.t epoch
 
+
+
+
 # Author's README
 # HAFR
 This our official implementation for the paper: Hierarchical Attention Network for Visually-aware
