@@ -1,21 +1,28 @@
 # APS360 Note
+
+## Files
+* Dataset.py loading the dataset
+* HAFR.py author's tensorflow implementation
+* pytorch_HAFR.py pytorch implementation
+
 ## How to run
+* download the Dataset to ..\Data\
 * python .\pytorch_HAFR.py --path ..\Data\ --pretrain 0 --reg 0.1 --reg_image 0.01 --reg_h 1 --reg_w 1
 
-## Environment
+## Environment (just in case)
 * python 3.10.14
 * torch 2.4.1
 
 ## training parameters
 * just like in lab and tut, epoch, lr, batch are adjustable
-* subset_size could be set small if you just want to test the process. 
+* subset_size could be set small if you just want to test the process. But for training, don't set it. It will default to using all training datas.
 (python .\pytorch_HAFR.py --path ..\Data\ --pretrain 0 --reg 0.1 --reg_image 0.01 --reg_h 1 --reg_w 1 --subset_size 20)
-* more could be seen in pytorch_HAFR.py:args
+* more parameters could be seen in pytorch_HAFR.py:args
 
 ## to do
-* store the training loss and validation loss w.r.t epoch
-* didn't use gpu right now
+* compute and store validation loss w.r.t epoch
 
+# Author's README
 # HAFR
 This our official implementation for the paper: Hierarchical Attention Network for Visually-aware
 Food Recommendation

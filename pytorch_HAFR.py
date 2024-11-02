@@ -1,3 +1,4 @@
+# Description: This file contains the implementation of the HAFR model using PyTorch.
 import os
 import math
 import numpy as np
@@ -29,7 +30,7 @@ def parse_args():
                         help='Evaluate per X epochs for test set.')
     parser.add_argument('--batch_size', type=int, default=512,
                         help='batch_size')
-    parser.add_argument('--epochs', type=int, default=10,
+    parser.add_argument('--epochs', type=int, default=300,
                         help='Number of epochs.')
     parser.add_argument('--embed_size', type=int, default=64,
                         help='Embedding size.')
@@ -43,7 +44,7 @@ def parse_args():
                         help='Regularization for mlp w.')
     parser.add_argument('--reg_h', type=float, default=1,
                         help='Regularization for mlp h.')
-    parser.add_argument('--lr', type=float, default=0.05,
+    parser.add_argument('--lr', type=float, default=0.1,
                         help='Learning rate.')
     parser.add_argument('--pretrain', type=int, default=1,
                         help='Use the pretraining weights or not')
@@ -160,6 +161,9 @@ class HAFR(nn.Module):
         hidden_output = torch.relu(hidden_input)
 
         output = self.h(hidden_output)
+        # in HAFR paper, they didn't seen to add the sigmoid activation function
+        # I think it's okay to add it here or not
+        output = torch.sigmoid(output)
         return output
 
     def _attention_ingredient_level(self, q_, embedding_p, image_embed, item_ingre_num):
@@ -186,6 +190,7 @@ class HAFR(nn.Module):
     
 def train(model, dataloader, optimizer, criterion, epochs, device):
     model.train()
+    epoch_losses = []  # List to store loss for each epoch
     for epoch in range(epochs):
         total_loss = 0
         for batch in dataloader:
@@ -199,13 +204,18 @@ def train(model, dataloader, optimizer, criterion, epochs, device):
 
             optimizer.zero_grad()
             output = model(user_input, item_input_pos, ingre_input_pos, image_input_pos, ingre_num_pos)
-            print(f"output is :{output}")
-            loss = criterion(output.squeeze(), labels)
-            print(f"labels is :{labels}")
-            loss.backward()
+            training_loss = criterion(output.squeeze(), labels)
+            training_loss.backward()
             optimizer.step()
-            total_loss += loss.item()
-        print(f"Epoch {epoch+1}, Loss: {total_loss/len(dataloader)}")
+            total_loss += training_loss.item()
+        
+        avg_training_loss = total_loss / len(dataloader)
+        epoch_losses.append(avg_training_loss)  # Store the average loss for this epoch
+        print(f"Epoch {epoch+1}, Loss: {avg_training_loss}")
+        
+        ## Validation to be added here !!!!!!!!!!!!!!!!!!!
+    
+    return epoch_losses  # Return the list of epoch losses
 
 if __name__ == '__main__':
     args = parse_args()
@@ -225,7 +235,7 @@ if __name__ == '__main__':
     # DataLoader
     # totally 676945 items
     # custom_dataset = CustomDataset(dataset, subset_size=9999999999, dns=model.dns)
-    custom_dataset = CustomDataset(dataset, subset_size=20, dns=model.dns)
+    custom_dataset = CustomDataset(dataset, subset_size=args.subset_size, dns=model.dns)
     dataloader = DataLoader(custom_dataset, batch_size=args.batch_size, shuffle=True)
 
     # Optimizer and loss function
@@ -233,7 +243,25 @@ if __name__ == '__main__':
     criterion = nn.BCEWithLogitsLoss()  # Define your loss function
 
     # start training
-    train(model, dataloader, optimizer, criterion, args.epochs, device)
+    losses_per_epoch = train(model, dataloader, optimizer, criterion, args.epochs, device)
+    # Save the losses_per_epoch to a file
+    losses_file_path = os.path.join(args.save_folder, 'losses_per_epoch.npy')
+    np.save(losses_file_path, losses_per_epoch)
+    print(f"Losses per epoch saved to {losses_file_path}")
+
+    # # To plot the losses later, you can use the following code:
+    # import matplotlib.pyplot as plt
+
+    # # Load the losses from the file
+    # loaded_losses = np.load(losses_file_path)
+
+    # # Plot the losses
+    # plt.plot(loaded_losses)
+    # plt.xlabel('Epoch')
+    # plt.ylabel('Loss')
+    # plt.title('Training Loss per Epoch')
+    # plt.show()
+    
     # Ensure the save folder exists
     if not os.path.exists(args.save_folder):
         os.makedirs(args.save_folder)
