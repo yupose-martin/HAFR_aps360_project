@@ -3,3 +3,4 @@ __pycache__/
 .vscode/
 pytorch_basic_frame.py
 .DS_Store
+data/
