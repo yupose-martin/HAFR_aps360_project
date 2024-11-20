@@ -308,7 +308,7 @@ class AllRecipes(object):
 
     @staticmethod
     def get_comments(
-        url: str, save_dir: str, wait_time: float = 1
+        url: str, save_dir: str, wait_time: float = 0.1
     ) -> list[CommentData]:
         """
         Get all user comments by fully loading them first.

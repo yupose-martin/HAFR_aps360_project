@@ -18,9 +18,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--overwrite",
-        type=bool,
-        default=False,
-        help="Whether to overwrite existing recipe content",
+        action="store_true",
+        help="Overwrite existing recipe content",
     )
 
     args = parser.parse_args()
