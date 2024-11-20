@@ -4,3 +4,4 @@ __pycache__/
 pytorch_basic_frame.py
 .DS_Store
 data/
+results/
