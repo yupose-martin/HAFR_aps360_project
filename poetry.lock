@@ -220,17 +220,6 @@ files = [
 beautifulsoup4 = "*"
 
 [[package]]
-name = "cachetools"
-version = "5.5.0"
-description = "Extensible memoizing collections and decorators"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "cachetools-5.5.0-py3-none-any.whl", hash = "sha256:02134e8439cdc2ffb62023ce1debca2944c3f289d66bb17ead3ab3dede74b292"},
-    {file = "cachetools-5.5.0.tar.gz", hash = "sha256:2cc24fb4cbe39633fb7badd9db9ca6295d766d9c2995f245725a46715d050f2a"},
-]
-
-[[package]]
 name = "certifi"
 version = "2024.8.30"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -837,136 +826,20 @@ test-full = ["adlfs", "aiohttp (!=4.0.0a0,!=4.0.0a1)", "cloudpickle", "dask", "d
 tqdm = ["tqdm"]
 
 [[package]]
-name = "google"
-version = "3.0.0"
-description = "Python bindings to the Google search engine."
+name = "graphviz"
+version = "0.20.3"
+description = "Simple Python interface for Graphviz"
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 files = [
-    {file = "google-3.0.0-py2.py3-none-any.whl", hash = "sha256:889cf695f84e4ae2c55fbc0cfdaf4c1e729417fa52ab1db0485202ba173e4935"},
-    {file = "google-3.0.0.tar.gz", hash = "sha256:143530122ee5130509ad5e989f0512f7cb218b2d4eddbafbad40fd10e8d8ccbe"},
+    {file = "graphviz-0.20.3-py3-none-any.whl", hash = "sha256:81f848f2904515d8cd359cc611faba817598d2feaac4027b266aa3eda7b3dde5"},
+    {file = "graphviz-0.20.3.zip", hash = "sha256:09d6bc81e6a9fa392e7ba52135a9d49f1ed62526f96499325930e87ca1b5925d"},
 ]
-
-[package.dependencies]
-beautifulsoup4 = "*"
-
-[[package]]
-name = "google-api-core"
-version = "2.23.0"
-description = "Google API client core library"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "google_api_core-2.23.0-py3-none-any.whl", hash = "sha256:c20100d4c4c41070cf365f1d8ddf5365915291b5eb11b83829fbd1c999b5122f"},
-    {file = "google_api_core-2.23.0.tar.gz", hash = "sha256:2ceb087315e6af43f256704b871d99326b1f12a9d6ce99beaedec99ba26a0ace"},
-]
-
-[package.dependencies]
-google-auth = ">=2.14.1,<3.0.dev0"
-googleapis-common-protos = ">=1.56.2,<2.0.dev0"
-proto-plus = [
-    {version = ">=1.25.0,<2.0.0dev", markers = "python_version >= \"3.13\""},
-    {version = ">=1.22.3,<2.0.0dev", markers = "python_version < \"3.13\""},
-]
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0.dev0"
-requests = ">=2.18.0,<3.0.0.dev0"
 
 [package.extras]
-async-rest = ["google-auth[aiohttp] (>=2.35.0,<3.0.dev0)"]
-grpc = ["grpcio (>=1.33.2,<2.0dev)", "grpcio (>=1.49.1,<2.0dev)", "grpcio-status (>=1.33.2,<2.0.dev0)", "grpcio-status (>=1.49.1,<2.0.dev0)"]
-grpcgcp = ["grpcio-gcp (>=0.2.2,<1.0.dev0)"]
-grpcio-gcp = ["grpcio-gcp (>=0.2.2,<1.0.dev0)"]
-
-[[package]]
-name = "google-api-python-client"
-version = "2.153.0"
-description = "Google API Client Library for Python"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "google_api_python_client-2.153.0-py2.py3-none-any.whl", hash = "sha256:6ff13bbfa92a57972e33ec3808e18309e5981b8ca1300e5da23bf2b4d6947384"},
-    {file = "google_api_python_client-2.153.0.tar.gz", hash = "sha256:35cce8647f9c163fc04fb4d811fc91aae51954a2bdd74918decbe0e65d791dd2"},
-]
-
-[package.dependencies]
-google-api-core = ">=1.31.5,<2.0.dev0 || >2.3.0,<3.0.0.dev0"
-google-auth = ">=1.32.0,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0.dev0"
-google-auth-httplib2 = ">=0.2.0,<1.0.0"
-httplib2 = ">=0.19.0,<1.dev0"
-uritemplate = ">=3.0.1,<5"
-
-[[package]]
-name = "google-auth"
-version = "2.36.0"
-description = "Google Authentication Library"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "google_auth-2.36.0-py2.py3-none-any.whl", hash = "sha256:51a15d47028b66fd36e5c64a82d2d57480075bccc7da37cde257fc94177a61fb"},
-    {file = "google_auth-2.36.0.tar.gz", hash = "sha256:545e9618f2df0bcbb7dcbc45a546485b1212624716975a1ea5ae8149ce769ab1"},
-]
-
-[package.dependencies]
-cachetools = ">=2.0.0,<6.0"
-pyasn1-modules = ">=0.2.1"
-rsa = ">=3.1.4,<5"
-
-[package.extras]
-aiohttp = ["aiohttp (>=3.6.2,<4.0.0.dev0)", "requests (>=2.20.0,<3.0.0.dev0)"]
-enterprise-cert = ["cryptography", "pyopenssl"]
-pyopenssl = ["cryptography (>=38.0.3)", "pyopenssl (>=20.0.0)"]
-reauth = ["pyu2f (>=0.1.5)"]
-requests = ["requests (>=2.20.0,<3.0.0.dev0)"]
-
-[[package]]
-name = "google-auth-httplib2"
-version = "0.2.0"
-description = "Google Authentication Library: httplib2 transport"
-optional = false
-python-versions = "*"
-files = [
-    {file = "google-auth-httplib2-0.2.0.tar.gz", hash = "sha256:38aa7badf48f974f1eb9861794e9c0cb2a0511a4ec0679b1f886d108f5640e05"},
-    {file = "google_auth_httplib2-0.2.0-py2.py3-none-any.whl", hash = "sha256:b65a0a2123300dd71281a7bf6e64d65a0759287df52729bdd1ae2e47dc311a3d"},
-]
-
-[package.dependencies]
-google-auth = "*"
-httplib2 = ">=0.19.0"
-
-[[package]]
-name = "google-auth-oauthlib"
-version = "1.2.1"
-description = "Google Authentication Library"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "google_auth_oauthlib-1.2.1-py2.py3-none-any.whl", hash = "sha256:2d58a27262d55aa1b87678c3ba7142a080098cbc2024f903c62355deb235d91f"},
-    {file = "google_auth_oauthlib-1.2.1.tar.gz", hash = "sha256:afd0cad092a2eaa53cd8e8298557d6de1034c6cb4a740500b5357b648af97263"},
-]
-
-[package.dependencies]
-google-auth = ">=2.15.0"
-requests-oauthlib = ">=0.7.0"
-
-[package.extras]
-tool = ["click (>=6.0.0)"]
-
-[[package]]
-name = "googleapis-common-protos"
-version = "1.66.0"
-description = "Common protobufs used in Google APIs"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "googleapis_common_protos-1.66.0-py2.py3-none-any.whl", hash = "sha256:d7abcd75fabb2e0ec9f74466401f6c119a0b498e27370e9be4c94cb7e382b8ed"},
-    {file = "googleapis_common_protos-1.66.0.tar.gz", hash = "sha256:c3e7b33d15fdca5374cc0a7346dd92ffa847425cc4ea941d970f13680052ec8c"},
-]
-
-[package.dependencies]
-protobuf = ">=3.20.2,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0.dev0"
-
-[package.extras]
-grpc = ["grpcio (>=1.44.0,<2.0.0.dev0)"]
+dev = ["flake8", "pep8-naming", "tox (>=3)", "twine", "wheel"]
+docs = ["sphinx (>=5,<7)", "sphinx-autodoc-typehints", "sphinx-rtd-theme"]
+test = ["coverage", "pytest (>=7,<8.1)", "pytest-cov", "pytest-mock (>=3)"]
 
 [[package]]
 name = "h11"
@@ -978,20 +851,6 @@ files = [
     {file = "h11-0.14.0-py3-none-any.whl", hash = "sha256:e3fe4ac4b851c468cc8363d500db52c2ead036020723024a109d37346efaa761"},
     {file = "h11-0.14.0.tar.gz", hash = "sha256:8f19fbbe99e72420ff35c00b27a34cb9937e902a8b810e2c88300c6f0a3b699d"},
 ]
-
-[[package]]
-name = "httplib2"
-version = "0.22.0"
-description = "A comprehensive HTTP client library."
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-files = [
-    {file = "httplib2-0.22.0-py3-none-any.whl", hash = "sha256:14ae0a53c1ba8f3d37e9e27cf37eabb0fb9980f435ba405d546948b009dd64dc"},
-    {file = "httplib2-0.22.0.tar.gz", hash = "sha256:d7a10bc5ef5ab08322488bde8c726eeee5c8618723fdb399597ec58f3d82df81"},
-]
-
-[package.dependencies]
-pyparsing = {version = ">=2.4.2,<3.0.0 || >3.0.0,<3.0.1 || >3.0.1,<3.0.2 || >3.0.2,<3.0.3 || >3.0.3,<4", markers = "python_version > \"3.0\""}
 
 [[package]]
 name = "huggingface-hub"
@@ -1191,6 +1050,27 @@ files = [
     {file = "kiwisolver-1.4.7-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:0c6c43471bc764fad4bc99c5c2d6d16a676b1abf844ca7c8702bdae92df01ee0"},
     {file = "kiwisolver-1.4.7.tar.gz", hash = "sha256:9893ff81bd7107f7b685d3017cc6583daadb4fc26e4a888350df530e41980a60"},
 ]
+
+[[package]]
+name = "lightning-utilities"
+version = "0.11.9"
+description = "Lightning toolbox for across the our ecosystem."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "lightning_utilities-0.11.9-py3-none-any.whl", hash = "sha256:ac6d4e9e28faf3ff4be997876750fee10dc604753dbc429bf3848a95c5d7e0d2"},
+    {file = "lightning_utilities-0.11.9.tar.gz", hash = "sha256:f5052b81344cc2684aa9afd74b7ce8819a8f49a858184ec04548a5a109dfd053"},
+]
+
+[package.dependencies]
+packaging = ">=17.1"
+setuptools = "*"
+typing-extensions = "*"
+
+[package.extras]
+cli = ["fire"]
+docs = ["requests (>=2.0.0)"]
+typing = ["mypy (>=1.0.0)", "types-setuptools"]
 
 [[package]]
 name = "markupsafe"
@@ -1709,22 +1589,6 @@ files = [
 ]
 
 [[package]]
-name = "oauthlib"
-version = "3.2.2"
-description = "A generic, spec-compliant, thorough implementation of the OAuth request-signing logic"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "oauthlib-3.2.2-py3-none-any.whl", hash = "sha256:8139f29aac13e25d502680e9e19963e83f16838d48a0d71c287fe40e7067fbca"},
-    {file = "oauthlib-3.2.2.tar.gz", hash = "sha256:9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918"},
-]
-
-[package.extras]
-rsa = ["cryptography (>=3.0.0)"]
-signals = ["blinker (>=1.4.0)"]
-signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
-
-[[package]]
 name = "outcome"
 version = "1.3.0.post0"
 description = "Capture the outcome of Python function calls."
@@ -1802,9 +1666,9 @@ files = [
 
 [package.dependencies]
 numpy = [
-    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
     {version = ">=1.22.4", markers = "python_version < \"3.11\""},
     {version = ">=1.23.2", markers = "python_version == \"3.11\""},
+    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -2035,43 +1899,6 @@ files = [
 ]
 
 [[package]]
-name = "proto-plus"
-version = "1.25.0"
-description = "Beautiful, Pythonic protocol buffers."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "proto_plus-1.25.0-py3-none-any.whl", hash = "sha256:c91fc4a65074ade8e458e95ef8bac34d4008daa7cce4a12d6707066fca648961"},
-    {file = "proto_plus-1.25.0.tar.gz", hash = "sha256:fbb17f57f7bd05a68b7707e745e26528b0b3c34e378db91eef93912c54982d91"},
-]
-
-[package.dependencies]
-protobuf = ">=3.19.0,<6.0.0dev"
-
-[package.extras]
-testing = ["google-api-core (>=1.31.5)"]
-
-[[package]]
-name = "protobuf"
-version = "5.28.3"
-description = ""
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "protobuf-5.28.3-cp310-abi3-win32.whl", hash = "sha256:0c4eec6f987338617072592b97943fdbe30d019c56126493111cf24344c1cc24"},
-    {file = "protobuf-5.28.3-cp310-abi3-win_amd64.whl", hash = "sha256:91fba8f445723fcf400fdbe9ca796b19d3b1242cd873907979b9ed71e4afe868"},
-    {file = "protobuf-5.28.3-cp38-abi3-macosx_10_9_universal2.whl", hash = "sha256:a3f6857551e53ce35e60b403b8a27b0295f7d6eb63d10484f12bc6879c715687"},
-    {file = "protobuf-5.28.3-cp38-abi3-manylinux2014_aarch64.whl", hash = "sha256:3fa2de6b8b29d12c61911505d893afe7320ce7ccba4df913e2971461fa36d584"},
-    {file = "protobuf-5.28.3-cp38-abi3-manylinux2014_x86_64.whl", hash = "sha256:712319fbdddb46f21abb66cd33cb9e491a5763b2febd8f228251add221981135"},
-    {file = "protobuf-5.28.3-cp38-cp38-win32.whl", hash = "sha256:3e6101d095dfd119513cde7259aa703d16c6bbdfae2554dfe5cfdbe94e32d548"},
-    {file = "protobuf-5.28.3-cp38-cp38-win_amd64.whl", hash = "sha256:27b246b3723692bf1068d5734ddaf2fccc2cdd6e0c9b47fe099244d80200593b"},
-    {file = "protobuf-5.28.3-cp39-cp39-win32.whl", hash = "sha256:135658402f71bbd49500322c0f736145731b16fc79dc8f367ab544a17eab4535"},
-    {file = "protobuf-5.28.3-cp39-cp39-win_amd64.whl", hash = "sha256:70585a70fc2dd4818c51287ceef5bdba6387f88a578c86d47bb34669b5552c36"},
-    {file = "protobuf-5.28.3-py3-none-any.whl", hash = "sha256:cee1757663fa32a1ee673434fcf3bf24dd54763c79690201208bafec62f19eed"},
-    {file = "protobuf-5.28.3.tar.gz", hash = "sha256:64badbc49180a5e401f373f9ce7ab1d18b63f7dd4a9cdc43c92b9f0b481cef7b"},
-]
-
-[[package]]
 name = "psutil"
 version = "6.1.0"
 description = "Cross-platform lib for process and system monitoring in Python."
@@ -2156,31 +1983,6 @@ files = [
 test = ["cffi", "hypothesis", "pandas", "pytest", "pytz"]
 
 [[package]]
-name = "pyasn1"
-version = "0.6.1"
-description = "Pure-Python implementation of ASN.1 types and DER/BER/CER codecs (X.208)"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "pyasn1-0.6.1-py3-none-any.whl", hash = "sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629"},
-    {file = "pyasn1-0.6.1.tar.gz", hash = "sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034"},
-]
-
-[[package]]
-name = "pyasn1-modules"
-version = "0.4.1"
-description = "A collection of ASN.1-based protocols modules"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "pyasn1_modules-0.4.1-py3-none-any.whl", hash = "sha256:49bfa96b45a292b711e986f222502c1c9a5e1f4e568fc30e2574a6c7d07838fd"},
-    {file = "pyasn1_modules-0.4.1.tar.gz", hash = "sha256:c28e2dbf9c06ad61c71a075c7e0f9fd0f1b0bb2d2ad4377f240d33ac2ab60a7c"},
-]
-
-[package.dependencies]
-pyasn1 = ">=0.4.6,<0.7.0"
-
-[[package]]
 name = "pycparser"
 version = "2.22"
 description = "C parser in Python"
@@ -2257,6 +2059,36 @@ files = [
 
 [package.extras]
 cli = ["click (>=5.0)"]
+
+[[package]]
+name = "pytorch-lightning"
+version = "2.4.0"
+description = "PyTorch Lightning is the lightweight PyTorch wrapper for ML researchers. Scale your models. Write less boilerplate."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pytorch-lightning-2.4.0.tar.gz", hash = "sha256:6aa897fd9d6dfa7b7b49f37c2f04e13592861831d08deae584dfda423fdb71c8"},
+    {file = "pytorch_lightning-2.4.0-py3-none-any.whl", hash = "sha256:9ac7935229ac022ef06994c928217ed37f525ac6700f7d4fc57009624570e655"},
+]
+
+[package.dependencies]
+fsspec = {version = ">=2022.5.0", extras = ["http"]}
+lightning-utilities = ">=0.10.0"
+packaging = ">=20.0"
+PyYAML = ">=5.4"
+torch = ">=2.1.0"
+torchmetrics = ">=0.7.0"
+tqdm = ">=4.57.0"
+typing-extensions = ">=4.4.0"
+
+[package.extras]
+all = ["bitsandbytes (>=0.42.0)", "deepspeed (>=0.8.2,<=0.9.3)", "hydra-core (>=1.2.0)", "ipython[all] (<8.15.0)", "jsonargparse[signatures] (>=4.27.7)", "lightning-utilities (>=0.8.0)", "matplotlib (>3.1)", "omegaconf (>=2.2.3)", "requests (<2.32.0)", "rich (>=12.3.0)", "tensorboardX (>=2.2)", "torchmetrics (>=0.10.0)", "torchvision (>=0.16.0)"]
+deepspeed = ["deepspeed (>=0.8.2,<=0.9.3)"]
+dev = ["bitsandbytes (>=0.42.0)", "cloudpickle (>=1.3)", "coverage (==7.3.1)", "deepspeed (>=0.8.2,<=0.9.3)", "fastapi", "hydra-core (>=1.2.0)", "ipython[all] (<8.15.0)", "jsonargparse[signatures] (>=4.27.7)", "lightning-utilities (>=0.8.0)", "matplotlib (>3.1)", "numpy (>=1.17.2)", "omegaconf (>=2.2.3)", "onnx (>=1.12.0)", "onnxruntime (>=1.12.0)", "pandas (>1.0)", "psutil (<5.9.6)", "pytest (==7.4.0)", "pytest-cov (==4.1.0)", "pytest-random-order (==1.1.0)", "pytest-rerunfailures (==12.0)", "pytest-timeout (==2.1.0)", "requests (<2.32.0)", "rich (>=12.3.0)", "scikit-learn (>0.22.1)", "tensorboard (>=2.9.1)", "tensorboardX (>=2.2)", "torchmetrics (>=0.10.0)", "torchvision (>=0.16.0)", "uvicorn"]
+examples = ["ipython[all] (<8.15.0)", "lightning-utilities (>=0.8.0)", "requests (<2.32.0)", "torchmetrics (>=0.10.0)", "torchvision (>=0.16.0)"]
+extra = ["bitsandbytes (>=0.42.0)", "hydra-core (>=1.2.0)", "jsonargparse[signatures] (>=4.27.7)", "matplotlib (>3.1)", "omegaconf (>=2.2.3)", "rich (>=12.3.0)", "tensorboardX (>=2.2)"]
+strategies = ["deepspeed (>=0.8.2,<=0.9.3)"]
+test = ["cloudpickle (>=1.3)", "coverage (==7.3.1)", "fastapi", "numpy (>=1.17.2)", "onnx (>=1.12.0)", "onnxruntime (>=1.12.0)", "pandas (>1.0)", "psutil (<5.9.6)", "pytest (==7.4.0)", "pytest-cov (==4.1.0)", "pytest-random-order (==1.1.0)", "pytest-rerunfailures (==12.0)", "pytest-timeout (==2.1.0)", "scikit-learn (>0.22.1)", "tensorboard (>=2.9.1)", "uvicorn"]
 
 [[package]]
 name = "pytz"
@@ -2454,38 +2286,6 @@ urllib3 = ">=1.21.1,<3"
 [package.extras]
 socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
-
-[[package]]
-name = "requests-oauthlib"
-version = "2.0.0"
-description = "OAuthlib authentication support for Requests."
-optional = false
-python-versions = ">=3.4"
-files = [
-    {file = "requests-oauthlib-2.0.0.tar.gz", hash = "sha256:b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9"},
-    {file = "requests_oauthlib-2.0.0-py2.py3-none-any.whl", hash = "sha256:7dd8a5c40426b779b0868c404bdef9768deccf22749cde15852df527e6269b36"},
-]
-
-[package.dependencies]
-oauthlib = ">=3.0.0"
-requests = ">=2.0.0"
-
-[package.extras]
-rsa = ["oauthlib[signedtoken] (>=3.0.0)"]
-
-[[package]]
-name = "rsa"
-version = "4.9"
-description = "Pure-Python RSA implementation"
-optional = false
-python-versions = ">=3.6,<4"
-files = [
-    {file = "rsa-4.9-py3-none-any.whl", hash = "sha256:90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7"},
-    {file = "rsa-4.9.tar.gz", hash = "sha256:e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21"},
-]
-
-[package.dependencies]
-pyasn1 = ">=0.1.3"
 
 [[package]]
 name = "safetensors"
@@ -3012,6 +2812,63 @@ opt-einsum = ["opt-einsum (>=3.3)"]
 optree = ["optree (>=0.12.0)"]
 
 [[package]]
+name = "torch-geometric"
+version = "2.6.1"
+description = "Graph Neural Network Library for PyTorch"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "torch_geometric-2.6.1-py3-none-any.whl", hash = "sha256:8faeb353f9655f7dbec44c5e0b44c721773bdfb279994da96b9b8b12fd30f427"},
+    {file = "torch_geometric-2.6.1.tar.gz", hash = "sha256:1f18f9d0fc4d2239d526221e4f22606a4a3895b5d965a9856d27610a3df662c6"},
+]
+
+[package.dependencies]
+aiohttp = "*"
+fsspec = "*"
+jinja2 = "*"
+numpy = "*"
+psutil = ">=5.8.0"
+pyparsing = "*"
+requests = "*"
+tqdm = "*"
+
+[package.extras]
+benchmark = ["matplotlib", "networkx", "pandas", "protobuf (<4.21)", "wandb"]
+dev = ["ipython", "matplotlib-inline", "pre-commit", "torch_geometric[test]"]
+full = ["ase", "captum (<0.7.0)", "graphviz", "h5py", "matplotlib", "networkx", "numba (<0.60.0)", "opt_einsum", "pandas", "pgmpy", "pynndescent", "pytorch-memlab", "rdflib", "rdkit", "scikit-image", "scikit-learn", "scipy", "statsmodels", "sympy", "tabulate", "torch_geometric[graphgym,modelhub]", "torchmetrics", "trimesh"]
+graphgym = ["protobuf (<4.21)", "pytorch-lightning (<2.3.0)", "yacs"]
+modelhub = ["huggingface_hub"]
+test = ["onnx", "onnxruntime", "pytest", "pytest-cov"]
+
+[[package]]
+name = "torchmetrics"
+version = "1.6.0"
+description = "PyTorch native Metrics"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "torchmetrics-1.6.0-py3-none-any.whl", hash = "sha256:a508cdd87766cedaaf55a419812bf9f493aff8fffc02cc19df5a8e2e7ccb942a"},
+    {file = "torchmetrics-1.6.0.tar.gz", hash = "sha256:aebba248708fb90def20cccba6f55bddd134a58de43fb22b0c5ca0f3a89fa984"},
+]
+
+[package.dependencies]
+lightning-utilities = ">=0.8.0"
+numpy = ">1.20.0"
+packaging = ">17.1"
+torch = ">=2.0.0"
+
+[package.extras]
+all = ["SciencePlots (>=2.0.0)", "gammatone (>=1.0.0)", "ipadic (>=1.0.0)", "librosa (>=0.10.0)", "matplotlib (>=3.6.0)", "mecab-python3 (>=1.0.6)", "mypy (==1.13.0)", "nltk (>3.8.1)", "numpy (<2.0)", "onnxruntime (>=1.12.0)", "pesq (>=0.0.4)", "piq (<=0.8.0)", "pycocotools (>2.0.0)", "pystoi (>=0.4.0)", "regex (>=2021.9.24)", "requests (>=2.19.0)", "scipy (>1.0.0)", "sentencepiece (>=0.2.0)", "torch (==2.5.1)", "torch-fidelity (<=0.4.0)", "torchaudio (>=2.0.1)", "torchvision (>=0.15.1)", "tqdm (<4.68.0)", "transformers (>4.4.0)", "transformers (>=4.42.3)", "types-PyYAML", "types-emoji", "types-protobuf", "types-requests", "types-setuptools", "types-six", "types-tabulate"]
+audio = ["gammatone (>=1.0.0)", "librosa (>=0.10.0)", "numpy (<2.0)", "onnxruntime (>=1.12.0)", "pesq (>=0.0.4)", "pystoi (>=0.4.0)", "requests (>=2.19.0)", "torchaudio (>=2.0.1)"]
+detection = ["pycocotools (>2.0.0)", "torchvision (>=0.15.1)"]
+dev = ["PyTDC (==0.4.1)", "SciencePlots (>=2.0.0)", "bert-score (==0.3.13)", "dython (==0.7.6)", "dython (>=0.7.8,<0.8.0)", "fairlearn", "fast-bss-eval (>=0.1.0)", "faster-coco-eval (>=1.6.3)", "gammatone (>=1.0.0)", "huggingface-hub (<0.27)", "ipadic (>=1.0.0)", "jiwer (>=2.3.0)", "kornia (>=0.6.7)", "librosa (>=0.10.0)", "lpips (<=0.1.4)", "matplotlib (>=3.6.0)", "mecab-ko (>=1.0.0,<1.1.0)", "mecab-ko-dic (>=1.0.0)", "mecab-python3 (>=1.0.6)", "mir-eval (>=0.6)", "monai (==1.3.2)", "monai (==1.4.0)", "mypy (==1.13.0)", "netcal (>1.0.0)", "nltk (>3.8.1)", "numpy (<2.0)", "numpy (<2.2.0)", "onnxruntime (>=1.12.0)", "pandas (>1.4.0)", "permetrics (==2.0.0)", "pesq (>=0.0.4)", "piq (<=0.8.0)", "pycocotools (>2.0.0)", "pystoi (>=0.4.0)", "pytorch-msssim (==1.0.0)", "regex (>=2021.9.24)", "requests (>=2.19.0)", "rouge-score (>0.1.0)", "sacrebleu (>=2.3.0)", "scikit-image (>=0.19.0)", "scipy (>1.0.0)", "sentencepiece (>=0.2.0)", "sewar (>=0.4.4)", "statsmodels (>0.13.5)", "torch (==2.5.1)", "torch-complex (<0.5.0)", "torch-fidelity (<=0.4.0)", "torchaudio (>=2.0.1)", "torchvision (>=0.15.1)", "tqdm (<4.68.0)", "transformers (>4.4.0)", "transformers (>=4.42.3)", "types-PyYAML", "types-emoji", "types-protobuf", "types-requests", "types-setuptools", "types-six", "types-tabulate"]
+image = ["scipy (>1.0.0)", "torch-fidelity (<=0.4.0)", "torchvision (>=0.15.1)"]
+multimodal = ["piq (<=0.8.0)", "transformers (>=4.42.3)"]
+text = ["ipadic (>=1.0.0)", "mecab-python3 (>=1.0.6)", "nltk (>3.8.1)", "regex (>=2021.9.24)", "sentencepiece (>=0.2.0)", "tqdm (<4.68.0)", "transformers (>4.4.0)"]
+typing = ["mypy (==1.13.0)", "torch (==2.5.1)", "types-PyYAML", "types-emoji", "types-protobuf", "types-requests", "types-setuptools", "types-six", "types-tabulate"]
+visual = ["SciencePlots (>=2.0.0)", "matplotlib (>=3.6.0)"]
+
+[[package]]
 name = "torchvision"
 version = "0.20.1"
 description = "image and video datasets and models for torch deep learning"
@@ -3044,6 +2901,20 @@ torch = "2.5.1"
 [package.extras]
 gdown = ["gdown (>=4.7.3)"]
 scipy = ["scipy"]
+
+[[package]]
+name = "torchviz"
+version = "0.0.2"
+description = "A small package to create visualizations of PyTorch execution graphs"
+optional = false
+python-versions = "*"
+files = [
+    {file = "torchviz-0.0.2.tar.gz", hash = "sha256:c790b4c993f783433604bf610cfa58bb0a031260be4ee5196a00c0884e768051"},
+]
+
+[package.dependencies]
+graphviz = "*"
+torch = "*"
 
 [[package]]
 name = "tqdm"
@@ -3213,17 +3084,6 @@ python-versions = ">=2"
 files = [
     {file = "tzdata-2024.2-py2.py3-none-any.whl", hash = "sha256:a48093786cdcde33cad18c2555e8532f34422074448fbc874186f0abd79565cd"},
     {file = "tzdata-2024.2.tar.gz", hash = "sha256:7d85cc416e9382e69095b7bdf4afd9e3880418a2413feec7069d533d6b4e31cc"},
-]
-
-[[package]]
-name = "uritemplate"
-version = "4.1.1"
-description = "Implementation of RFC 6570 URI Templates"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "uritemplate-4.1.1-py2.py3-none-any.whl", hash = "sha256:830c08b8d99bdd312ea4ead05994a38e8936266f84b9a7878232db50b044e02e"},
-    {file = "uritemplate-4.1.1.tar.gz", hash = "sha256:4346edfc5c3b79f694bccd6d6099a322bbeb628dbf2cd86eea55a456ce5124f0"},
 ]
 
 [[package]]
@@ -3523,4 +3383,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "1fcef9450d573d1a582ab57a93eaf33665b52f3839bb9834a315d1d268a07856"
+content-hash = "2313f1d47a9d9e61916fbd35ddfae52e042c484d45e7f36535f81e140f1d01b1"
