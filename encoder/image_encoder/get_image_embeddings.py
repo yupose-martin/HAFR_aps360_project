@@ -4,7 +4,7 @@ from PIL import Image
 from transformers import AutoImageProcessor, ViTForImageClassification
 
 
-def image_encoder(
+def encode_image(
     image_path: str, processor: AutoImageProcessor, model: ViTForImageClassification
 ):
     """
@@ -20,6 +20,10 @@ def image_encoder(
     """
 
     image = Image.open(image_path)
+
+    # Ensure the image is in RGB format
+    if image.mode == "RGBA":
+        image = image.convert("RGB")
     inputs = processor(images=image, return_tensors="pt")
     outputs = model(**inputs, output_hidden_states=True)
     # Use the representation of the CLS token (at index 0) as the image embedding
@@ -45,5 +49,5 @@ if __name__ == "__main__":
     processor = AutoImageProcessor.from_pretrained(args.model_path)
 
     # Get image embeddings
-    embeddings = image_encoder(args.image_path, processor, model)
+    embeddings = encode_image(args.image_path, processor, model)
     print(embeddings)
