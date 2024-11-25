@@ -8,6 +8,7 @@ import time
 import urllib.parse
 import urllib.request
 from typing import TypedDict
+from multiprocessing import Pool
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -193,6 +194,27 @@ class AllRecipes(object):
         )
 
     @staticmethod
+    def download_image(args):
+        """
+        Helper method for downloading a single image.
+
+        Args:
+            args (tuple): A tuple containing the image source URL, the file path to save the image, and the image index.
+
+        Returns:
+            str: The file path of the downloaded image, or an error message if the download fails.
+        """
+        img_src, file_path, index = args
+        try:
+            print(f"Downloading image {index + 1} from {img_src}...")
+            urllib.request.urlretrieve(img_src, file_path)
+            print(f"Downloaded: {file_path}")
+            return file_path
+        except Exception as e:
+            print(f"Failed to download image {index + 1}: {e}")
+            return f"Error: {e}"
+
+    @staticmethod
     def get_images(soup: BeautifulSoup, save_path: str, max_number: int = 100):
         """
         Retrieves all <img> tags under a <div> with the class `photo-dialog__page`
@@ -230,27 +252,25 @@ class AllRecipes(object):
         else:
             print(f"Found {len(images)} images. Downloading all images.")
 
-        # Download each image
-        downloaded_files = []
+        # Prepare arguments for parallel download
+        download_args = []
         for i, img in enumerate(images):
-            print(f"Downloading image {i + 1}...")
-            # Get the src attribute of the img tag
             img_src = img.get("data-src")
             if not img_src:
                 print(f"Image {i + 1} has no src attribute. Skipping...")
                 continue
 
-            # Generate the file name for saving
             file_name = f"image_{i + 1}.jpg"
             file_path = os.path.join(save_path, file_name)
+            download_args.append((img_src, file_path, i))
 
-            try:
-                # Download the image
-                urllib.request.urlretrieve(img_src, file_path)
-                downloaded_files.append(file_path)
-                print(f"Downloaded: {file_path}")
-            except Exception as e:
-                print(f"Failed to download {img_src}: {e}")
+        # Use multiprocessing to download images
+        downloaded_files = []
+        with Pool() as pool:
+            downloaded_files = pool.map(AllRecipes.download_image, download_args)
+
+        # Filter out error messages
+        downloaded_files = [file for file in downloaded_files if not file.startswith("Error")]
 
         return downloaded_files
 
