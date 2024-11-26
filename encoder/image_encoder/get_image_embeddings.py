@@ -1,35 +1,43 @@
 import argparse
-
+import torch
 from PIL import Image
 from transformers import AutoImageProcessor, ViTForImageClassification
 
 
-def encode_image(
-    image_path: str, processor: AutoImageProcessor, model: ViTForImageClassification
-):
+def encode_images(
+    image_paths: list[str], processor: AutoImageProcessor, model: ViTForImageClassification
+) -> torch.Tensor:
     """
-    Get image embeddings using a fine-tuned Vision Transformer model.
+    Get image embeddings for a list of images using a fine-tuned Vision Transformer model.
 
     Args:
-        image_path (str): Path to the image file.
+        image_paths (List[str]): List of paths to the image files.
         processor (AutoImageProcessor): Image processor object.
         model (ViTForImageClassification): Vision Transformer model.
 
     Returns:
         torch.Tensor: Image embeddings.
     """
+    images = []
+    for image_path in image_paths:
+        image = Image.open(image_path)
 
-    image = Image.open(image_path)
+        # Ensure the image is in RGB format
+        if image.mode == "RGBA":
+            image = image.convert("RGB")
+        images.append(image)
 
-    # Ensure the image is in RGB format
-    if image.mode == "RGBA":
-        image = image.convert("RGB")
-    inputs = processor(images=image, return_tensors="pt")
-    outputs = model(**inputs, output_hidden_states=True)
-    # Use the representation of the CLS token (at index 0) as the image embedding
-    embeddings = outputs.hidden_states[-1][:, 0, :]
+    device = next(model.parameters()).device
+    inputs = processor(images=images, return_tensors="pt").to(device)
 
-    return embeddings
+    with torch.no_grad():
+        outputs = model(**inputs, output_hidden_states=True)
+        # Use the representation of the CLS token (at index 0) as the image embedding
+        embeddings = outputs.hidden_states[-1][:, 0, :]
+
+    return embeddings.cpu()  # Move embeddings back to CPU if necessary
+
+
 
 
 if __name__ == "__main__":
@@ -49,5 +57,5 @@ if __name__ == "__main__":
     processor = AutoImageProcessor.from_pretrained(args.model_path)
 
     # Get image embeddings
-    embeddings = encode_image(args.image_path, processor, model)
+    embeddings = encode_images([args.image_path], processor, model)
     print(embeddings)
