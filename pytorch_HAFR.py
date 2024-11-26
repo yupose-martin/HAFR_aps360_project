@@ -164,7 +164,7 @@ class HAFR(nn.Module):
         # in HAFR paper, they didn't seen to add the sigmoid activation function
         # I think it's okay to add it here or not
         output = torch.sigmoid(output)
-        return output
+        return output, user_embedding, item_embedding, ingre_embedding
 
     def _attention_ingredient_level(self, q_, embedding_p, image_embed, item_ingre_num):
         b, n, _ = q_.shape
@@ -187,7 +187,27 @@ class HAFR(nn.Module):
         B = torch.softmax(c_mlp_output, dim=-1).unsqueeze(-1)
         ce = torch.stack([embedding_q, embedding_ingre_att, image_embed], dim=1)
         return torch.sum(B * ce, dim=1)
-    
+
+def hafr_loss(outputs, labels, user_embedding, item_embedding, ingre_embedding, model):
+    # Separate positive and negative samples based on labels
+    pos_mask = labels == 1
+    neg_mask = labels == 0
+
+    output_pos = outputs[pos_mask]
+    output_neg = outputs[neg_mask]
+
+    # Calculate the softplus loss
+    result = output_pos - output_neg
+    loss = torch.sum(torch.nn.functional.softplus(-result))
+
+    # Regularization terms
+    reg_loss = model.reg * (
+        torch.sum(user_embedding ** 2) + torch.sum(item_embedding[pos_mask] ** 2) + torch.sum(ingre_embedding[pos_mask] ** 2) +
+        torch.sum(item_embedding[neg_mask] ** 2) + torch.sum(ingre_embedding[neg_mask] ** 2)
+    ) + model.reg_image * torch.sum(model.W_image.weight ** 2) + model.reg_w * torch.sum(model.W_concat.weight ** 2) + model.reg_h * torch.sum(model.h.weight ** 2)
+
+    return loss + reg_loss
+ 
 def train(model, dataloader, optimizer, criterion, epochs, device):
     model.train()
     epoch_losses = []  # List to store loss for each epoch
@@ -203,8 +223,8 @@ def train(model, dataloader, optimizer, criterion, epochs, device):
             labels = labels.float().to(device)
 
             optimizer.zero_grad()
-            output = model(user_input, item_input_pos, ingre_input_pos, image_input_pos, ingre_num_pos)
-            training_loss = criterion(output.squeeze(), labels)
+            output, user_embedding, item_embedding, ingre_embedding = model(user_input, item_input_pos, ingre_input_pos, image_input_pos, ingre_num_pos)
+            training_loss = hafr_loss(output, labels, user_embedding, item_embedding, ingre_embedding, model)
             training_loss.backward()
             optimizer.step()
             total_loss += training_loss.item()

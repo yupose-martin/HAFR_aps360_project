@@ -7,8 +7,9 @@
 
 ## How to run
 * download the Dataset to ..\Data\
-* python .\pytorch_HAFR.py --path ..\Data\ --pretrain 0 --reg 0.1 --reg_image 0.01 --reg_h 1 --reg_w 1
-
+```
+python .\pytorch_HAFR.py --path ..\Data\ --pretrain 0 --reg 0.1 --reg_image 0.01 --reg_h 1 --reg_w 1
+'''
 ## Environment (just in case)
 * python 3.10.14
 * torch 2.4.1

@@ -4,4 +4,12 @@ __pycache__/
 pytorch_basic_frame.py
 .DS_Store
 data/
+data2/
 results/
+__pycache__/
+__MACOSX/
+data_text/
+data_image/
+data2.zip
+fine_tuning_clip_folder.zip
+

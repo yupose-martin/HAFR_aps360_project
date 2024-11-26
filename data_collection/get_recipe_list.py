@@ -1,7 +1,10 @@
 import json
 import os
+import sys
 
-from data_collection.api import AllRecipes
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from api import AllRecipes
 
 # Set directory to save results
 save_dir = os.path.join(os.getcwd(), "data")

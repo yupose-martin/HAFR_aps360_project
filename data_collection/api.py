@@ -376,6 +376,228 @@ class AllRecipes(object):
         # Return all comments as a list
         return comments
 
+    @staticmethod
+    def get_description(soup: BeautifulSoup, save_path: str) -> str:
+        """
+        Get the recipe description from the BeautifulSoup object.
+
+        Args:
+            soup (BeautifulSoup): BeautifulSoup object parsed from the HTML content.
+            save_path (str): Path to the directory where the description will be saved.
+
+        Returns:
+            str: The recipe description.
+        """
+        # Find the meta tag with the name "description"
+        description_tag = soup.find("meta", {"name": "description"})
+        if description_tag and description_tag.get("content"):
+            descriptions = description_tag["content"]
+        else:
+            descriptions = "No description found."
+
+        # Save the description to a file
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)  # Create the directory if it doesn't exist
+
+        save_path = os.path.join(save_path, "descriptions.txt")
+        with open(save_path, "w", encoding="utf-8") as file:
+            file.write(descriptions)
+
+        print(f"Description saved to {save_path}")
+
+        return descriptions 
+    
+    @staticmethod
+    def get_steps(soup: BeautifulSoup, save_path: str) -> str:
+        # Step 1: Find all <script> tags
+        script_tags = soup.find_all("script", type="application/ld+json")
+        steps = ''
+        # Step 2: Loop through script tags to find relevant JSON data
+        for script in script_tags:
+            try:
+                # Attempt to parse JSON from script contents
+                json_data = json.loads(script.string)
+                
+                
+                
+                # Check if the JSON contains the desired key (e.g., "recipeInstructions")
+                if isinstance(json_data, list):  # Sometimes JSON starts with a list
+                    for entry in json_data:
+                        if "recipeInstructions" in entry:
+                            instructions = entry["recipeInstructions"]
+                            
+                            # Extract the "text" from instructions
+                            for step in instructions:
+                                # print(step.get("text"))
+                                steps += step.get("text") + '\n'
+            except (json.JSONDecodeError, TypeError):
+                continue  # Skip non-JSON or incompatible <script> tags
+            
+        # Save the description to a file
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)  # Create the directory if it doesn't exist
+            
+        save_path = os.path.join(save_path, "steps.txt")
+        with open(save_path, "w", encoding="utf-8") as file:
+            file.write(steps)
+        print(f"Steps saved to {save_path}")
+        return steps
+    
+    @staticmethod
+    def get_ingredients(soup: BeautifulSoup, save_path: str) -> str:
+        # Step 1: Find all <script> tags
+        script_tags = soup.find_all("script", type="application/ld+json")
+        ingredients = ''
+        # Step 2: Loop through script tags to find relevant JSON data
+        for script in script_tags:
+            try:
+                # Attempt to parse JSON from script contents
+                json_data = json.loads(script.string)
+                
+                # Check if the JSON contains the desired key (e.g., "recipeInstructions")
+                if isinstance(json_data, list):  # Sometimes JSON starts with a list
+                    for entry in json_data:
+                        if "recipeIngredient" in entry:
+                            recipeIngredients = entry["recipeIngredient"]
+                            for ingredient in recipeIngredients:
+                                ingredients += ingredient + '\n'
+            except (json.JSONDecodeError, TypeError):
+                continue  # Skip non-JSON or incompatible <script> tags
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        save_path = os.path.join(save_path, "ingredients.txt")
+        with open(save_path, "w", encoding="utf-8") as file:
+            file.write(ingredients)
+        print(f"Ingredients saved to {save_path}")
+        return ingredients
+    
+    @staticmethod
+    def split_ingredient(soup: BeautifulSoup, save_path: str) -> str:
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        saved_path = os.path.join(save_path, "ingredients.txt")
+        
+        units = [
+        # Common volume measurements
+        "teaspoon", "teaspoons", "tsp",
+        "tablespoon", "tablespoons", "tbsp",
+        "cup", "cups",
+        "pint", "pints",
+        "quart", "quarts",
+        "gallon", "gallons",
+        "ml", "milliliter", "milliliters",
+        "l", "liter", "liters",
+        
+        # Common weight measurements
+        "ounce", "ounces", "oz",
+        "pound", "pounds", "lb", "lbs",
+        "gram", "grams", "g",
+        "kilogram", "kilograms", "kg",
+        
+        # Length or size measurements
+        "inch", "inches",
+        "cm", "centimeter", "centimeters",
+        "mm", "millimeter", "millimeters",
+
+        # Descriptive amounts
+        "pinch", "pinches",
+        "dash", "dashes",
+        "handful", "handfuls",
+        "stick", "sticks",
+        "slice", "slices",
+        "clove", "cloves",
+        "head", "heads",
+        "piece", "pieces",
+        "bunch", "bunches",
+        "can", "cans",
+        "jar", "jars",
+        "package", "packages",
+        "container", "containers",
+        "bag", "bags",
+        "block", "blocks",
+        "sprig", "sprigs",
+        "stalk", "stalks",
+        
+        # Unusual or less common descriptors
+        "drop", "drops",
+        "sheet", "sheets",
+        "fillet", "fillets",
+        "filet", "filets",
+        "patty", "patties",
+        "loaf", "loaves",
+        "roll", "rolls",
+        "ball", "balls",
+        "cube", "cubes",
+        "ring", "rings",
+        "strip", "strips",
+        "bar", "bars",
+        "square", "squares",
+
+        # Time-based descriptors (for rare cases)
+        "hour", "hours",
+        "minute", "minutes",
+        "second", "seconds"
+    ]
+        # Read the ingredients from the file
+        with open(saved_path, "r", encoding="utf-8") as file:
+            recipes_list = file.read()
+
+        # Transform the ingredients into a list
+        ingredients = recipes_list.strip().split('\n')
+        # print(f"ingredients: {ingredients}")
+        # Step 1: Remove everything after the first commaa nd inside the parentheses
+        cleaned_ingredients = [re.sub(r",.*", "", item).strip() for item in ingredients]
+        # Step 1: Remove everything inside parentheses
+        cleaned_ingredients = [re.sub(r"\([^)]*\)", "", item).strip() for item in cleaned_ingredients]
+
+        print(f"cleaned_ingredients: {cleaned_ingredients}")
+        # Step 3: Function to parse the ingredients
+        def parse_ingredient(ingredient):
+            #1. match the of like "plenty of salt" "handful of agurula"
+            if " of " in ingredient:
+                amount, name = ingredient.split(" of ", 1)  # Split on "of"
+                return amount.strip(), name.strip()
+            
+            # 2. Match unit first
+            for unit in units:
+                pattern = rf"\b(\d*\.?\d+\s*[\w/+-]*)\s*{unit}\b"
+                match = re.search(pattern, ingredient)
+                if match:
+                    amount = match.group(0)
+                    name = ingredient[match.end():].strip()
+                    return amount.strip(), name
+            
+            # 3. If no unit, match the number
+            number_pattern = r"^\d*\.?\d+[\w/+-]*"
+            number_match = re.match(number_pattern, ingredient)
+            if number_match:
+                amount = number_match.group(0)
+                name = ingredient[number_match.end():].strip()
+                return amount.strip(), name
+            
+            # 3. Default: No amount, treat entire string as name
+            return None, ingredient
+
+        # Step 4: Process each ingredient
+        parsed_ingredients = [parse_ingredient(ingredient) for ingredient in cleaned_ingredients]
+
+        # Step 5: Split the results into two lists
+        amounts, names = zip(*parsed_ingredients)
+
+        # Display the results
+        print("Amounts:")
+        print(amounts)
+        print("\nIngredients:")
+        print(names)
+        
+        # Save the amounts and names to a file
+        save_path = os.path.join(save_path, "parsed_ingredients.txt")
+        with open(save_path, "w", encoding="utf-8") as file:
+            for amount, name in zip(amounts, names):
+                file.write(f"{amount}|{name}\n")
+            print(f"Parsed ingredients saved to {save_path}")
+        
+    
     @classmethod
     def _get_prep_time(cls, soup):
         return cls._get_times_data(soup, "Prep Time:")
@@ -393,7 +615,7 @@ class AllRecipes(object):
         return cls._get_times_data(soup, "Servings:")
 
     @classmethod
-    def get(cls, url, save_path, download_images=False, get_comments=False):
+    def get(cls, url, save_path, download_images=False, get_comments=False, get_descriptions=False, get_steps=False, get_ingredients=False):
         """
         'url' from 'search' method.
         ex. "/recipe/106349/beef-and-spinach-curry/"
@@ -450,5 +672,43 @@ class AllRecipes(object):
             except Exception as e:
                 print(f"Failed to get comments: {e}")
                 data["comments_path"] = None
+                
+        if get_descriptions:
+            try:
+                recipe_description_directory = os.path.join(recipe_directory, "descriptions")
+                description = cls.get_description(soup, recipe_description_directory)
+                data["descriptions_path"] = recipe_description_directory
+            except Exception as e:
+                print(f"Failed to get descriptions: {e}")
+                data["descriptions_path"] = None
+        
+        if get_steps:
+            try:
+                recipe_steps_directory = os.path.join(recipe_directory, "steps")
+                steps = cls.get_steps(soup,recipe_steps_directory)
+                data["steps"] = recipe_steps_directory
+            except Exception as e:
+                print(f"Failed to get steps: {e}")
+                data["steps"] = None
 
+        if get_ingredients:
+            try:
+                recipe_ingredients_directory = os.path.join(recipe_directory, "ingredients")
+                ingredients = cls.get_ingredients(soup, recipe_ingredients_directory)
+                data["ingredients"] = recipe_ingredients_directory
+            except Exception as e:
+                print(f"Failed to get ingredients: {e}")
+                data["ingredients"] = None
+                
+        #split the downloaded ingredient into amount and ingredient
+        # split_ingredients = False
+        # if split_ingredients:
+        #     try:
+        #         recipe_ingredients_directory = os.path.join(recipe_directory, "ingredients")
+        #         splited_ingredients = cls.split_ingredient(soup, recipe_ingredients_directory)
+        #         data["ingredients"] = recipe_ingredients_directory
+        #     except Exception as e:
+        #         print(f"Failed to get ingredients: {e}")
+        #         data["ingredients"] = None
+        
         return data

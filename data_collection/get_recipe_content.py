@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 
-from data_collection.api import AllRecipes
+from api import AllRecipes
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Get recipe content")
@@ -44,8 +44,11 @@ if __name__ == "__main__":
             detailed_recipe = AllRecipes.get(
                 recipe_url,
                 args.output_dir,
-                download_images=True,
-                get_comments=True,
+                download_images=False,
+                get_comments=False,
+                get_descriptions=False,
+                get_steps=False,
+                get_ingredients=False,
             )
             num_recipes_done += 1
             recipes_remaining.remove(recipe_name)
