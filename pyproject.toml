@@ -20,9 +20,8 @@ pillow = "^11.0.0"
 matplotlib = "^3.9.2"
 torchvision = "^0.20.1"
 accelerate = "^1.1.1"
-google-api-python-client = "^2.153.0"
-google-auth-httplib2 = "^0.2.0"
-google-auth-oauthlib = "^1.2.1"
+torch-geometric = "^2.6.1"
+pytorch-lightning = "^2.4.0"
 
 
 [build-system]
