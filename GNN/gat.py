@@ -1,6 +1,6 @@
 import torch
-from torch import nn
 from pytorch_lightning import LightningModule
+from torch import nn
 from torch_geometric.data import HeteroData
 from torch_geometric.nn import GATv2Conv
 
@@ -8,33 +8,37 @@ from torch_geometric.nn import GATv2Conv
 class GATModel(LightningModule):
     def __init__(
         self,
-        user_dim: int,
+        unique_users: int,
         item_dim: int,
         rating_dim: int,
         hidden_dim: int,
         output_dim: int,
         num_layers: int,
+        num_heads_per_layer: int,
         lr: float,
+        use_weighted_loss: bool = True,
     ) -> None:
         """
         PyTorch Lightning model for a bipartite graph using GATv2Conv.
 
         Args:
-            user_dim (int): Number of unique user IDs.
+            unique_users (int): Number of unique user IDs.
             item_dim (int): Dimension of the CLIP embedding for items.
             rating_dim (int): Dimension of the rating embedding (e.g., 6 for ratings 1-5).
             hidden_dim (int): Dimension of the hidden representations in GNN layers.
             output_dim (int): Dimension of the final node embeddings.
             num_layers (int): Number of GATv2Conv layers.
+            num_heads_per_layer (int): Number of attention heads per GATv2Conv layer.
             lr (float): Learning rate for optimization.
+            use_weighted_loss (bool): Whether to use weighted loss based on rating frequencies.
         """
         super().__init__()
         self.save_hyperparameters()
 
         # User embedding: One-hot encoding to dense embedding
-        self.user_embed = nn.Embedding(user_dim, hidden_dim)
 
-        # Item embedding: Transform CLIP embeddings
+        self.user_embed = nn.Embedding(unique_users, hidden_dim)
+        # Linear layer to convert CLIP embeddings to hidden_dim
         self.item_linear = nn.Linear(item_dim, hidden_dim)
 
         # Rating embedding
@@ -46,24 +50,27 @@ class GATModel(LightningModule):
         for i in range(num_layers):
             in_channels = hidden_dim if i == 0 else hidden_dim
             out_channels = hidden_dim if i < num_layers - 1 else output_dim
-            self.gat_user_to_item.append(
-                GATv2Conv(
-                    (-1, -1),
-                    out_channels,
-                    edge_dim=hidden_dim,
-                    add_self_loops=False,
-                )
-            )
             self.gat_item_to_user.append(
                 GATv2Conv(
                     (-1, -1),
                     out_channels,
                     edge_dim=hidden_dim,
                     add_self_loops=False,
+                    heads=num_heads_per_layer,
+                )
+            )
+            self.gat_user_to_item.append(
+                GATv2Conv(
+                    (-1, -1),
+                    out_channels,
+                    edge_dim=hidden_dim,
+                    add_self_loops=False,
+                    heads=num_heads_per_layer,
                 )
             )
 
         self.lr = lr
+        self.use_weighted_loss = use_weighted_loss
 
     def forward(self, data: HeteroData) -> dict[str, torch.Tensor]:
         """
@@ -81,7 +88,7 @@ class GATModel(LightningModule):
         """
         # Initialize user and item node features
         data = data.detach()
-        user_indices = data["user"].x.argmax(dim=-1)
+        user_indices = data["user"].x.reshape(-1)
         user_embeddings = self.user_embed(user_indices)
         item_embeddings = self.item_linear(data["item"].x)
 
@@ -96,14 +103,6 @@ class GATModel(LightningModule):
         for i, (gat_user_to_item, gat_item_to_user) in enumerate(
             zip(self.gat_user_to_item, self.gat_item_to_user)
         ):
-            # User -> Item
-            item_embeddings = gat_user_to_item(
-                (user_embeddings, item_embeddings),
-                data["user", "rates", "item"].edge_index,
-                edge_attr_user_to_item,
-            )
-            item_embeddings = item_embeddings.relu()
-
             # Item -> User
             user_embeddings = gat_item_to_user(
                 (item_embeddings, user_embeddings),
@@ -111,6 +110,14 @@ class GATModel(LightningModule):
                 edge_attr_item_to_user,
             )
             user_embeddings = user_embeddings.relu()
+
+            # User -> Item
+            item_embeddings = gat_user_to_item(
+                (user_embeddings, item_embeddings),
+                data["user", "rates", "item"].edge_index,
+                edge_attr_user_to_item,
+            )
+            item_embeddings = item_embeddings.relu()
 
         return {"user": user_embeddings, "item": item_embeddings}
 
@@ -132,6 +139,48 @@ class GATModel(LightningModule):
         scores = (source_embeddings * target_embeddings).sum(dim=-1)  # Dot product
         return scores
 
+    def compute_loss(
+        self, predicted_ratings: torch.Tensor, ground_truth_ratings: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Compute weighted loss for the predicted ratings.
+
+        Args:
+            predicted_ratings (torch.Tensor): Predicted ratings.
+            ground_truth_ratings (torch.Tensor): Ground truth ratings.
+
+        Returns:
+            torch.Tensor: Weighted loss.
+        """
+        if self.use_weighted_loss:
+            # Compute unique values and their counts
+            unique_ratings, counts = torch.unique(
+                ground_truth_ratings, return_counts=True
+            )
+            frequencies = counts.float() / counts.sum()
+
+            # Frequency-based weights (inverse frequency)
+            inverse_freq_weights = torch.log(1 / frequencies)
+
+            weights_dict = {
+                rating.item(): weight
+                for rating, weight in zip(unique_ratings, inverse_freq_weights)
+            }
+
+            # Map weights to each ground truth rating
+            weights = torch.tensor(
+                [weights_dict[rating.item()] for rating in ground_truth_ratings],
+                device=ground_truth_ratings.device,
+            )
+
+        else:
+            weights = torch.ones_like(ground_truth_ratings)
+
+        # Compute weighted loss
+        squared_errors = (predicted_ratings - ground_truth_ratings) ** 2
+        weighted_loss = (weights * squared_errors).mean()
+        return weighted_loss
+
     def training_step(self, batch: HeteroData, batch_idx: int) -> torch.Tensor:
         """
         Training step for LightningModule.
@@ -151,12 +200,22 @@ class GATModel(LightningModule):
         predicted_ratings = self.compute_edge_scores(x_dict, edge_index)
 
         # Ground truth ratings
-        ground_truth_ratings = batch["rates"].edge_attr.argmax(dim=-1).float()
+        ground_truth_ratings = (
+            batch["user", "rates", "item"].edge_attr.float().reshape(-1)
+        )
 
-        # Compute loss
-        loss = nn.functional.mse_loss(predicted_ratings, ground_truth_ratings)
-        self.log("train_loss", loss, prog_bar=True)
-        return loss
+        # Compute training loss
+        weighted_loss = self.compute_loss(predicted_ratings, ground_truth_ratings)
+
+        self.log(
+            "train_loss",
+            weighted_loss,
+            prog_bar=True,
+            on_epoch=True,
+            on_step=False,
+            batch_size=batch["user"].num_nodes,
+        )
+        return weighted_loss
 
     def validation_step(self, batch: HeteroData, batch_idx: int) -> None:
         """
@@ -174,11 +233,57 @@ class GATModel(LightningModule):
         predicted_ratings = self.compute_edge_scores(x_dict, edge_index)
 
         # Ground truth ratings
-        ground_truth_ratings = batch["rates"].edge_attr.argmax(dim=-1).float()
+        ground_truth_ratings = (
+            batch["user", "rates", "item"].edge_attr.float().reshape(-1)
+        )
 
         # Compute validation loss
-        loss = nn.functional.mse_loss(predicted_ratings, ground_truth_ratings)
-        self.log("val_loss", loss, prog_bar=True)
+        loss = self.compute_loss(predicted_ratings, ground_truth_ratings)
+
+        # Hard to define batch size for validation
+        self.log(
+            "val_loss",
+            loss,
+            prog_bar=True,
+            on_step=False,
+            on_epoch=True,
+            batch_size=batch["user"].num_nodes,
+        )
+        print(f"Validation loss: {loss}")
+        return loss
+
+    def test_step(self, batch: HeteroData, batch_idx: int) -> None:
+        """
+        Test step for LightningModule.
+
+        Args:
+            batch (HeteroData): A batch of heterogeneous graph data.
+            batch_idx (int): Index of the batch.
+        """
+        # Forward pass
+        x_dict = self(batch)
+
+        # Compute edge scores
+        edge_index = batch["rates"].edge_index
+        predicted_ratings = self.compute_edge_scores(x_dict, edge_index)
+
+        # Ground truth ratings
+        ground_truth_ratings = (
+            batch["user", "rates", "item"].edge_attr.float().reshape(-1)
+        )
+
+        for i in range(len(predicted_ratings)):
+            print(
+                f"Predicted rating: {predicted_ratings[i]}, Ground truth rating: {ground_truth_ratings[i]}"
+            )
+
+        # Compute test loss
+        loss = self.compute_loss(predicted_ratings, ground_truth_ratings)
+
+        # Hard to define batch size for test
+        # self.log("test_loss", loss, prog_bar=True, on_step=False, on_epoch=True, batch_size=1)
+        print(f"Test loss: {loss}")
+        return
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """

@@ -3,9 +3,7 @@ import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
-import torch
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers import CSVLogger
 from torch_geometric.loader import HGTLoader
 from transformers import AutoImageProcessor, ViTForImageClassification
@@ -14,34 +12,13 @@ from GNN.gat import GATModel
 from GNN.prepare_graph import prepare_hetero_graph, split_hetero_graph
 
 
-class ValidationCallback(Callback):
-    def __init__(self, val_loader):
-        self.val_loader = val_loader
-
-    def on_epoch_end(self, trainer, pl_module):
-        pl_module.eval()
-        print("Validating...")
-        total_loss = 0.0
-        total_accuracy = 0.0
-        with torch.no_grad():
-            for batch in self.val_loader:
-                batch = batch.to(pl_module.device)
-                loss, accuracy = pl_module.validation_step(batch)
-                total_loss += loss.item()
-                total_accuracy += accuracy.item()
-        avg_loss = total_loss / len(self.val_loader)
-        avg_accuracy = total_accuracy / len(self.val_loader)
-        print(f"Validation Loss: {avg_loss}, Accuracy: {avg_accuracy}")
-        pl_module.train()
-
-
 def train_model(
     base_dir: str,
     processor: AutoImageProcessor,
     model: ViTForImageClassification,
     log_dir: str,
     batch_size: int,
-    num_neighbors: int,
+    num_samples: int,
 ):
     """
     Train the GATModel with prepared graph data.
@@ -52,7 +29,7 @@ def train_model(
         model: Vision Transformer model for encoding images.
         log_dir (str): Directory to save training logs.
         batch_size (int): Batch size for training.
-        num_neighbors (int): Number of neighbors to sample for each node.
+        num_samples (int): Number of samples to sample for each type of node.
     """
     # Prepare data
     data = prepare_hetero_graph(base_dir, processor, model)
@@ -73,48 +50,56 @@ def train_model(
     # Create data loaders
     train_loader = HGTLoader(
         train_data,
-        num_samples={
-            ("user", "rates", "item"): num_neighbors,
-            ("item", "rated_by", "user"): num_neighbors,
-        },
+        num_samples={key: [num_samples] for key in train_data.node_types},
         batch_size=batch_size,
         input_nodes="user",
+        shuffle=True,
     )
 
     val_loader = HGTLoader(
         val_data,
-        num_samples={
-            ("user", "rates", "item"): num_neighbors,
-            ("item", "rated_by", "user"): num_neighbors,
-        },
-        batch_size=batch_size,
+        num_samples={key: [num_samples] for key in val_data.node_types},
+        batch_size=val_data["user"].num_nodes,
         input_nodes="user",
+        shuffle=False,
     )
+
+    test_loader = HGTLoader(
+        test_data,
+        num_samples={key: [num_samples] for key in test_data.node_types},
+        batch_size=test_data["user"].num_nodes,
+        input_nodes="user",
+        shuffle=False,
+    )
+    # train_loader = DataLoader([train_data], batch_size=batch_size, shuffle=True)
+    # val_loader = DataLoader([val_data], batch_size=batch_size, shuffle=False)
 
     # Initialize model
     gat_model = GATModel(
-        user_dim=train_data["user"].x.size(1),
+        unique_users=train_data["user"].x.size(0),
         item_dim=train_data["item"].x.size(1),
         rating_dim=6,  # Assuming ratings are in the range 1-5
-        hidden_dim=128,
-        output_dim=128,
+        hidden_dim=4,
+        output_dim=32,
         num_layers=1,
-        lr=0.001,
+        num_heads_per_layer=1,
+        lr=1e-4,
+        use_weighted_loss=True,
     )
 
     # Training setup
     logger = CSVLogger(log_dir, name="GAT_training_logs")
     trainer = Trainer(
-        max_epochs=10,
+        max_epochs=30,
         logger=logger,
         devices=1,
-        accelerator="cpu",
-        callbacks=[ValidationCallback(val_loader)],
+        accelerator="gpu",
     )
 
     # Train the model
     print("Training GAT model...")
-    trainer.fit(gat_model, train_loader)
+    trainer.fit(gat_model, train_loader, val_loader)
+    trainer.test(gat_model, test_loader)
 
 
 if __name__ == "__main__":
@@ -143,5 +128,4 @@ if __name__ == "__main__":
     processor = AutoImageProcessor.from_pretrained(args.model_path)
 
     # Train the GAT model
-    print("Training GAT model...")
-    train_model(args.base_dir, processor, model, "./logs", 1, 10)
+    train_model(args.base_dir, processor, model, "./logs", 100, 100)
