@@ -32,29 +32,26 @@ def image_encoder(
     return embeddings
 
 def text_encoder(
-    text: str, image_path: str, processor: CLIPProcessor, model: CLIPModel
+    text: str, processor: CLIPProcessor, model: CLIPModel, device="cuda"
 ):
     """
     Get text embeddings using a fine-tuned CLIPModel (image is also required????!!)
 
     Args:
         text (str): text
-        image_path (str): image path
         processor (CLIPProcessor): CLIPProcessor.
         model (CLIPModel): CLIPModel
 
     Returns:
         torch.Tensor: Image embeddings.
     """
-    image = Image.open(image_path).convert("RGB")
-    image = image.resize((224, 224))
 
-    inputs = processor(text=[text], images=image, return_tensors="pt")
+    inputs = processor(text=[text], return_tensors="pt")
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
-    outputs = model(**inputs)
+    outputs = model.get_text_features(**inputs)
     
     # modify based on what embedding you want
-    embeddings = outputs.logits_per_text
+    embeddings = outputs
 
     return embeddings
 
@@ -75,27 +72,27 @@ if __name__ == "__main__":
     
     args = argparser.parse_args()
 
-    # Load the fine-tuned Vision Transformer model
-    model = ViTForImageClassification.from_pretrained(args.model_path)
-    processor = AutoImageProcessor.from_pretrained(args.model_path)
+    # # Load the fine-tuned Vision Transformer model
+    # model = ViTForImageClassification.from_pretrained(args.model_path)
+    # processor = AutoImageProcessor.from_pretrained(args.model_path)
 
-    # Get image embeddings
-    embeddings = image_encoder(args.image_path, processor, model)
-    print(embeddings)
+    # # Get image embeddings
+    # embeddings = image_encoder(args.image_path, processor, model)
+    # print(embeddings)
     
-    # # get text embeddings
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-    # print(f"Using {device}")
+    # get text embeddings
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using {device}")
     
-    # clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     
-    # #later change to our fine-tuned clip model
-    # clip_model = CLIPModel.from_pretrained(
-    # "openai/clip-vit-base-patch32",
-    # device_map=device,
-    # torch_dtype=torch.float32,
-    # )
+    #later change to our fine-tuned clip model
+    clip_model = CLIPModel.from_pretrained(
+    "openai/clip-vit-base-patch32",
+    device_map=device,
+    torch_dtype=torch.float32,
+    )
     
-    # text_embeddings = text_encoder(text=args.description, image_path=args.image_path,
-    #                                processor=clip_processor, model=clip_model)
-    # print(text_embeddings)
+    text_embeddings = text_encoder(text=args.description, 
+                                   processor=clip_processor, model=clip_model, device=device)
+    print(text_embeddings)
