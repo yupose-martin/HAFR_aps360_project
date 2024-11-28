@@ -12,7 +12,77 @@ from torchvision.transforms import ToPILImage
 from transformers import AutoImageProcessor, ViTImageProcessor
 
 
-def load_recipe_data(base_dir: str , base_text_dir: str) -> list[dict[str, any]]:
+def load_recipe_data_for_graph(
+    base_dir: str, base_text_dir: str
+) -> list[dict[str, any]]:
+    """
+    Load recipe data from a given directory.
+    Args:
+        base_dir (str): The base directory containing recipe subdirectories containing images and comments.
+        base_text_dir (str): The base directory containing text subdirectories containing descriptions and steps.
+    Returns:
+        List[Dict[str, Any]]: A list of dictionaries with keys `recipe_name`,
+                              `image_paths`, `comments`, and `description`.
+    """
+    recipes = []
+    for recipe_name in os.listdir(base_dir):
+        recipe_path = os.path.join(base_dir, recipe_name)
+
+        # Find the corresponding text directory
+        text_path = os.path.join(base_text_dir, recipe_name)
+
+        # Load image paths and comments
+        images_dir = os.path.join(recipe_path, "images")
+        comments_file = os.path.join(recipe_path, "comments", "comments.json")
+
+        # Load image paths
+        image_paths = [
+            os.path.join(images_dir, fname)
+            for fname in os.listdir(images_dir)
+            if fname.lower().endswith((".png", ".jpg", ".jpeg"))
+        ]
+
+        # Load comments
+        comments = []
+        if os.path.exists(comments_file):
+            with open(comments_file, "r", encoding="utf-8") as f:
+                comments = json.load(f)
+
+        # Load text description and steps
+        description_file = os.path.join(text_path, "descriptions", "descriptions.txt")
+        steps_file = os.path.join(text_path, "steps", "steps.txt")
+
+        with open(description_file, "r", encoding="utf-8") as f:
+            description = f.read()
+        with open(steps_file, "r", encoding="utf-8") as f:
+            steps = f.read()
+        text = description + steps
+
+        # Load ingredients
+        ingredients_file = os.path.join(
+            text_path, "ingredients", "parsed_ingredients.txt"
+        )
+        ingredients = []
+        if os.path.exists(ingredients_file):
+            with open(ingredients_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split("|")
+                    if len(parts) > 1:  # Ensure there are two parts
+                        ingredients.append(parts[1].strip())
+
+        recipes.append(
+            {
+                "recipe_name": recipe_name,
+                "image_paths": image_paths,
+                "comments": comments,
+                "description": text,
+                "ingredients": ingredients,
+            }
+        )
+    return recipes
+
+
+def load_recipe_data(base_dir: str, base_text_dir: str) -> list[dict[str, any]]:
     """
     Load recipe data from a given directory.
 
@@ -25,37 +95,48 @@ def load_recipe_data(base_dir: str , base_text_dir: str) -> list[dict[str, any]]
     """
     image_base_path = base_dir
     text_base_path = base_text_dir
-    image_folder_names = [f for f in os.listdir(image_base_path) if os.path.isdir(os.path.join(image_base_path, f))]
-    text_folder_names = [f for f in os.listdir(text_base_path) if os.path.isdir(os.path.join(text_base_path, f))]
+    image_folder_names = [
+        f
+        for f in os.listdir(image_base_path)
+        if os.path.isdir(os.path.join(image_base_path, f))
+    ]
+    text_folder_names = [
+        f
+        for f in os.listdir(text_base_path)
+        if os.path.isdir(os.path.join(text_base_path, f))
+    ]
     # common foler names
     common_folder_names = list(set(image_folder_names).intersection(text_folder_names))
 
     print(len(common_folder_names))
-    
+
     recipes = []
-    #load the paths of the images and the text
+    # load the paths of the images and the text
     for folder_name in common_folder_names:
         image_folder_path = os.path.join(image_base_path, folder_name)
         text_folder_path = os.path.join(text_base_path, folder_name)
-        
-        
+
         # there's one text description for each foler. But there's multiple images in each folder
         # so we need to create a pair of image and text for each image in the folder
         # and we create dataset based on that
         # then we can create a dataloader for the dataset
         # then we can load the model and fine-tune the model based on our dataloader
         image_path = os.path.join(image_folder_path, image_folder_path)
-        
+
         image_path = os.path.join(image_folder_path, "images")
-        comments_file_path = os.path.join(image_folder_path, "comments", "comments.json")
+        comments_file_path = os.path.join(
+            image_folder_path, "comments", "comments.json"
+        )
         # there's many images in the image folder
-        
+
         # there's one text description for each foler. We need to load the description and steps and add them together
         text_path_descriptions = os.path.join(text_folder_path, "descriptions")
-        text_path_descriptions = os.path.join(text_path_descriptions, "descriptions.txt")
+        text_path_descriptions = os.path.join(
+            text_path_descriptions, "descriptions.txt"
+        )
         text_path_steps = os.path.join(text_folder_path, "steps")
         text_path_steps = os.path.join(text_path_steps, "steps.txt")
-        
+
         # load the text description and steps and add them up together to form a string
         with open(text_path_descriptions, "r", encoding="utf-8") as f:
             description = f.read()
@@ -64,10 +145,10 @@ def load_recipe_data(base_dir: str , base_text_dir: str) -> list[dict[str, any]]
         text = description + steps
         with open(comments_file_path, "r", encoding="utf-8") as f:
             comments = f.read()
-        
+
         for image_file_name in os.listdir(image_path):
             image_file_path = os.path.join(image_path, image_file_name)
-            
+
             recipes.append(
                 {
                     "recipe_name": folder_name,
@@ -78,6 +159,7 @@ def load_recipe_data(base_dir: str , base_text_dir: str) -> list[dict[str, any]]
             )
     return recipes
 
+
 # Example on how to use this function
 # recipe = load_recipe_data(base_dir=".\\data_image\\",base_text_dir=".\\data_text\\")
 
@@ -87,6 +169,7 @@ def load_recipe_data(base_dir: str , base_text_dir: str) -> list[dict[str, any]]
 # print(f"recipe[0]['description']: {recipe[0]['description']}")
 # print(f"recipe[0]['image_paths']: {recipe[0]['image_paths']}")
 # print(f"recipe[0]['recipe_name']: {recipe[0]['recipe_name']}")
+
 
 class RecipeDataset(Dataset):
     def __init__(
