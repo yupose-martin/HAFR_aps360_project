@@ -1,0 +1,19 @@
+defaults:
+  - hyperparameters: default  # This points to configs/hyperparameters/default.yaml
+  - hyperparameters/tuning    # This points to configs/hyperparameters/tuning.yaml
+  - _self_
+
+experiment_name: "HAFR_GAT_Tuning"
+
+training:
+  base_dir: "data_collection"
+  base_text_dir: "data_collection"  # If text data is also in the same folder
+  log_dir: "logs"
+  model_save_path: "save"
+  
+hydra:
+  run:
+    dir: ../outputs/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: ../sweeps/${now:%Y-%m-%d_%H-%M-%S}
+  output_subdir: null

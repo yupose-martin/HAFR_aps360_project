@@ -1,0 +1,11 @@
+  batch_size: [16, 32, 64]
+  num_samples: 100  # Ensure this is present
+  hidden_dim: [64, 128, 256]
+  output_dim: 32
+  lr: [0.001, 0.0001]
+  num_layers: 2
+  num_heads_per_layer: 4
+  use_weighted_loss: true
+  max_epochs: 20
+  num_epochs: [10, 20]
+  min_interactions: 5

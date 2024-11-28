@@ -1,0 +1,5 @@
+# tuning.yaml
+batch_size: [16, 32, 64]
+hidden_dim: [64, 128, 256]
+lr: [1e-3, 1e-4]
+num_epochs: [10, 20]

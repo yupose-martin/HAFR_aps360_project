@@ -6,31 +6,36 @@ from encoder.image_encoder.prepare_dataset import load_recipe_data
 from torch_geometric.data import HeteroData
 from tqdm import tqdm
 from transformers import AutoImageProcessor, ViTForImageClassification
+from omegaconf import DictConfig
 
 
 def prepare_hetero_graph(
-    base_dir: str,
+    cfg: DictConfig,
     processor: AutoImageProcessor,
     model: ViTForImageClassification,
-    batch_size: int = 32,
-    min_interactions: int = 5,
 ) -> HeteroData:
     """
     Prepare a heterogeneous graph for GNN training, including both "user->item" and "item->user" edges,
     and retaining only users with a minimum number of interactions.
 
     Args:
-        base_dir (str): Directory containing recipe data.
+        cfg (DictConfig): Configuration object with hyperparameters and paths.
         processor: AutoImageProcessor: Image processor for encoding images.
         model: ViTForImageClassification: Vision Transformer model for encoding images.
-        batch_size (int): Batch size for image encoding.
-        min_interactions (int): Minimum number of interactions a user must have to be included.
 
     Returns:
         HeteroData: Prepared graph with user and item nodes and user-item interaction edges.
     """
+    base_dir = cfg.training.base_dir
+    base_text_dir = cfg.training.base_text_dir
+    batch_size = cfg.hyperparameters.batch_size
+    min_interactions = cfg.hyperparameters.min_interactions
+
+    print(f"Loading data from: {base_dir}")
+    print(f"Loading text data from: {base_text_dir}")
+
     # Load recipe data
-    recipes = load_recipe_data(base_dir)
+    recipes = load_recipe_data(base_dir, base_text_dir)
 
     # Initialize heterogeneous graph
     data = HeteroData()
@@ -76,8 +81,13 @@ def prepare_hetero_graph(
         recipe_name = recipe["recipe_name"]
         item_id = item_ids[recipe_name]
         for image_path in recipe["image_paths"]:
+            print(f"Image path: {image_path}")
             all_image_paths.append(image_path)
             image_item_ids.append(item_id)
+
+    print(f"Total images found: {len(all_image_paths)}")
+
+    print(recipes)
 
     # Batch process images using encode_images
     model.eval()
@@ -87,6 +97,9 @@ def prepare_hetero_graph(
     embeddings = []
     num_images = len(all_image_paths)
     num_batches = (num_images + batch_size - 1) // batch_size
+
+    if num_images == 0:
+        raise ValueError("No images found. Check data_collection directory and recipe data structure.")
 
     for i in tqdm(range(num_batches), desc="Encoding images"):
         batch_image_paths = all_image_paths[i * batch_size : (i + 1) * batch_size]
@@ -189,7 +202,6 @@ def prepare_hetero_graph(
     data["item", "rated_by", "user"].edge_attr = edge_attr_item_to_user
 
     return data
-
 
 def split_hetero_graph(data: HeteroData, train_ratio=0.8, val_ratio=0.1):
     """
