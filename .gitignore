@@ -11,3 +11,5 @@ data2.zip
 data_image/
 data_text/
 fine_tuning_clip_folder.zip
+data_mini_images/
+data_mini_texts/

@@ -1,57 +1,70 @@
 import argparse
 
-from PIL import Image
-from transformers import AutoImageProcessor, ViTForImageClassification
-import clip
-from transformers import CLIPProcessor, CLIPModel
-import requests
-from transformers import CLIPModel
 import torch
+import torch.nn.functional as F
+from PIL import Image
+from transformers import (CLIPImageProcessor, CLIPModel, CLIPProcessor,
+                          CLIPTokenizerFast)
 
-def image_encoder(
-    image_path: str, processor: AutoImageProcessor, model: ViTForImageClassification
+
+def encode_images(
+    image_paths: list[str],
+    processor: CLIPImageProcessor,
+    model: CLIPModel,
+    device="cuda",
 ):
     """
-    Get image embeddings using a fine-tuned Vision Transformer model.
+    Get image embeddings using a fine-tuned CLIPModel
 
     Args:
-        image_path (str): Path to the image file.
-        processor (AutoImageProcessor): Image processor object.
-        model (ViTForImageClassification): Vision Transformer model.
-
-    Returns:
-        torch.Tensor: Image embeddings.
-    """
-
-    image = Image.open(image_path)
-    inputs = processor(images=image, return_tensors="pt")
-    outputs = model(**inputs, output_hidden_states=True)
-    # Use the representation of the CLS token (at index 0) as the image embedding
-    embeddings = outputs.hidden_states[-1][:, 0, :]
-
-    return embeddings
-
-def text_encoder(
-    text: str, processor: CLIPProcessor, model: CLIPModel, device="cuda"
-):
-    """
-    Get text embeddings using a fine-tuned CLIPModel (image is also required????!!)
-
-    Args:
-        text (str): text
+        image_path (str): Path to the image file to encode.
         processor (CLIPProcessor): CLIPProcessor.
         model (CLIPModel): CLIPModel
 
     Returns:
         torch.Tensor: Image embeddings.
     """
+    model = model.to(device)
 
-    inputs = processor(text=[text], return_tensors="pt")
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
-    outputs = model.get_text_features(**inputs)
-    
-    # modify based on what embedding you want
-    embeddings = outputs
+    images = []
+    for image_path in image_paths:
+        image = Image.open(image_path)
+
+        # Ensure the image is in RGB format
+        if image.mode == "RGBA":
+            image = image.convert("RGB")
+        images.append(image)
+
+    inputs = processor(images=images, return_tensors="pt").to(device)
+
+    with torch.no_grad():
+        embeddings = model.get_image_features(**inputs)
+
+    return embeddings
+
+
+def encode_texts(
+    texts: list[str], processor: CLIPTokenizerFast, model: CLIPModel, device="cuda"
+):
+    """
+    Get text embeddings using a fine-tuned CLIPModel
+
+    Args:
+        texts (list[str]): List of texts to encode.
+        processor (CLIPProcessor): CLIPProcessor.
+        model (CLIPModel): CLIPModel
+
+    Returns:
+        torch.Tensor: Image embeddings.
+    """
+    model = model.to(device)
+
+    inputs = processor(
+        text=texts, return_tensors="pt", padding=True, truncation=True
+    ).to(device)
+
+    with torch.no_grad():
+        embeddings = model.get_text_features(**inputs)
 
     return embeddings
 
@@ -66,33 +79,46 @@ if __name__ == "__main__":
     argparser.add_argument(
         "model_path", type=str, help="Path to the fine-tuned Vision Transformer model"
     )
-    argparser.add_argument(
-        "description", type=str, help="Description information"
-    )
-    
+    argparser.add_argument("description", type=str, help="Description information")
+
     args = argparser.parse_args()
 
-    # # Load the fine-tuned Vision Transformer model
-    # model = ViTForImageClassification.from_pretrained(args.model_path)
-    # processor = AutoImageProcessor.from_pretrained(args.model_path)
+    print(f"Image path: {args.image_path}")
+    print(f"Text description: {args.description}")
 
-    # # Get image embeddings
-    # embeddings = image_encoder(args.image_path, processor, model)
-    # print(embeddings)
-    
     # get text embeddings
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {device}")
-    
-    clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-    
-    #later change to our fine-tuned clip model
+
+    clip_processor = CLIPProcessor.from_pretrained(
+        "openai/clip-vit-base-patch32"
+    )  # Assume the model is fine-tuned on this model
+
+    # later change to our fine-tuned clip model
     clip_model = CLIPModel.from_pretrained(
-    "openai/clip-vit-base-patch32",
-    device_map=device,
-    torch_dtype=torch.float32,
+        "openai/clip-vit-base-patch32",
+        device_map=device,
+        torch_dtype=torch.float32,
     )
-    
-    text_embeddings = text_encoder(text=args.description, 
-                                   processor=clip_processor, model=clip_model, device=device)
-    print(text_embeddings)
+
+    clip_model.load_state_dict(torch.load(args.model_path))
+
+    text_embeddings = encode_texts(
+        texts=args.description,
+        processor=clip_processor,
+        model=clip_model,
+        device=device,
+    )
+
+    # # Get image embeddings
+    image_embeddings = encode_images(
+        image_paths=[args.image_path],
+        processor=clip_processor,
+        model=clip_model,
+        device=device,
+    )
+
+    # Compute similarity between text and image embeddings
+    similarity = F.cosine_similarity(text_embeddings, image_embeddings).item()
+
+    print(f"Similarity between text and image embeddings: {similarity:.4f}")

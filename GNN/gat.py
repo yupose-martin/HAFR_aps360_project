@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from pytorch_lightning import LightningModule
 from torch import nn
 from torch_geometric.data import HeteroData
@@ -10,9 +11,8 @@ class GATModel(LightningModule):
         self,
         unique_users: int,
         item_dim: int,
-        rating_dim: int,
+        ingredient_dim: int,
         hidden_dim: int,
-        output_dim: int,
         num_layers: int,
         num_heads_per_layer: int,
         lr: float,
@@ -24,9 +24,8 @@ class GATModel(LightningModule):
         Args:
             unique_users (int): Number of unique user IDs.
             item_dim (int): Dimension of the CLIP embedding for items.
-            rating_dim (int): Dimension of the rating embedding (e.g., 6 for ratings 1-5).
+            ingredient_dim (int): Dimension of the CLIP embedding for ingredients.
             hidden_dim (int): Dimension of the hidden representations in GNN layers.
-            output_dim (int): Dimension of the final node embeddings.
             num_layers (int): Number of GATv2Conv layers.
             num_heads_per_layer (int): Number of attention heads per GATv2Conv layer.
             lr (float): Learning rate for optimization.
@@ -36,20 +35,21 @@ class GATModel(LightningModule):
         self.save_hyperparameters()
 
         # User embedding: One-hot encoding to dense embedding
-
         self.user_embed = nn.Embedding(unique_users, hidden_dim)
-        # Linear layer to convert CLIP embeddings to hidden_dim
+
+        # Linear layer to convert item CLIP embeddings to hidden_dim
         self.item_linear = nn.Linear(item_dim, hidden_dim)
 
-        # Rating embedding
-        self.rating_embed = nn.Embedding(rating_dim, hidden_dim)
+        # Linear layer to convert ingredient CLIP embeddings to hidden_dim
+        self.ingredient_linear = nn.Linear(ingredient_dim, hidden_dim)
 
         # GATConv layers for user->item and item->user
         self.gat_user_to_item = nn.ModuleList()
         self.gat_item_to_user = nn.ModuleList()
+        self.gat_ingredient_to_item = nn.ModuleList()
+        self.gat_item_to_ingredient = nn.ModuleList()
         for i in range(num_layers):
-            in_channels = hidden_dim if i == 0 else hidden_dim
-            out_channels = hidden_dim if i < num_layers - 1 else output_dim
+            out_channels = hidden_dim
             self.gat_item_to_user.append(
                 GATv2Conv(
                     (-1, -1),
@@ -68,7 +68,28 @@ class GATModel(LightningModule):
                     heads=num_heads_per_layer,
                 )
             )
+            self.gat_ingredient_to_item.append(
+                GATv2Conv(
+                    (-1, -1),
+                    out_channels,
+                    edge_dim=hidden_dim,
+                    add_self_loops=False,
+                    heads=num_heads_per_layer,
+                )
+            )
+            self.gat_item_to_ingredient.append(
+                GATv2Conv(
+                    (-1, -1),
+                    out_channels,
+                    edge_dim=hidden_dim,
+                    add_self_loops=False,
+                    heads=num_heads_per_layer,
+                )
+            )
 
+        self.user_layer_norm = torch.nn.LayerNorm(hidden_dim)
+        self.item_layer_norm = torch.nn.LayerNorm(hidden_dim)
+        self.ingredient_layer_norm = torch.nn.LayerNorm(hidden_dim)
         self.lr = lr
         self.use_weighted_loss = use_weighted_loss
 
@@ -81,7 +102,6 @@ class GATModel(LightningModule):
                 - 'item': CLIP embeddings as node features.
                 - 'user': One-hot encoded features (converted in forward pass).
                 - 'edge_index' for 'interaction'.
-                - 'rating' as edge attributes.
 
         Returns:
             dict[str, torch.Tensor]: Updated embeddings for 'user' and 'item' nodes.
@@ -91,35 +111,57 @@ class GATModel(LightningModule):
         user_indices = data["user"].x.reshape(-1)
         user_embeddings = self.user_embed(user_indices)
         item_embeddings = self.item_linear(data["item"].x)
+        ingredient_embeddings = self.ingredient_linear(data["ingredient"].x)
 
-        # Embed edge features (ratings)
-        edge_attr_user_to_item = self.rating_embed(
-            data["user", "rates", "item"].edge_attr.long()
-        )  # Shape: (|E_user_to_item|, hidden_dim)
-        edge_attr_item_to_user = self.rating_embed(
-            data["item", "rated_by", "user"].edge_attr.long()
-        )  # Shape: (|E_item_to_user|, hidden_dim)
-
-        for i, (gat_user_to_item, gat_item_to_user) in enumerate(
-            zip(self.gat_user_to_item, self.gat_item_to_user)
+        for (
+            gat_item_to_user,
+            gat_user_to_item,
+            gat_ingredient_to_item,
+            gat_item_to_ingredient,
+        ) in zip(
+            self.gat_item_to_user,
+            self.gat_user_to_item,
+            self.gat_ingredient_to_item,
+            self.gat_item_to_ingredient,
         ):
+            # Ingredient -> Item
+            initial_item_embeddings = item_embeddings
+            item_embeddings = gat_ingredient_to_item(
+                (ingredient_embeddings, item_embeddings),
+                data["ingredient", "included_in", "item"].edge_index,
+            )
+            item_embeddings = self.item_layer_norm(F.leaky_relu(item_embeddings))
+
+            # Item -> Ingredient
+            ingredient_embeddings = gat_item_to_ingredient(
+                (item_embeddings, ingredient_embeddings),
+                data["item", "contains", "ingredient"].edge_index,
+            )
+            ingredient_embeddings = self.ingredient_layer_norm(
+                F.leaky_relu(ingredient_embeddings)
+            )
+
             # Item -> User
             user_embeddings = gat_item_to_user(
                 (item_embeddings, user_embeddings),
                 data["item", "rated_by", "user"].edge_index,
-                edge_attr_item_to_user,
             )
-            user_embeddings = user_embeddings.relu()
+            user_embeddings = self.user_layer_norm(F.leaky_relu(user_embeddings))
 
             # User -> Item
             item_embeddings = gat_user_to_item(
                 (user_embeddings, item_embeddings),
                 data["user", "rates", "item"].edge_index,
-                edge_attr_user_to_item,
             )
-            item_embeddings = item_embeddings.relu()
+            item_embeddings = self.item_layer_norm(
+                F.leaky_relu(item_embeddings) + initial_item_embeddings
+            )
 
-        return {"user": user_embeddings, "item": item_embeddings}
+        return {
+            "user": user_embeddings,
+            "item": item_embeddings,
+            "ingredient": ingredient_embeddings,
+        }
 
     def compute_edge_scores(
         self, x_dict: dict, edge_index: torch.Tensor
